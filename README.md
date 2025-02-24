@@ -1,2 +1,2 @@
-# FIT-RS2-2025
+# FIT-RazvojSoftvera-Seminarski
 Seminarski rad iz predmeta Razvoj Softvera 2
