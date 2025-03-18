@@ -1,0 +1,36 @@
+networks:
+  zamenenet:
+    driver: bridge 
+
+services:
+  # mssql docker
+    zamene-sql:
+        container_name: zamene-sql
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        restart: unless-stopped
+        environment:
+          - ACCEPT_EULA=Y
+          - SA_PASSWORD=${SQL_PASSWORD}
+          - MSSQL_PID=Developer
+        ports:
+          - ${SQL_PORT}:1433
+        expose:
+          - 1433
+        networks:
+          - zamenenet
+
+    zamene-api:
+        restart: unless-stopped
+        build:
+          context: .
+        environment:
+          - ConnectionStrings__DefaultConnection=Server=${SQL_HOST}, 1433;Database=${SQL_DATABASE};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
+          - ASPNETCORE_ENVIRONMENT=Development
+        ports:
+          - 5283:5283
+        networks:
+          - zamenenet
+        links:
+          - zamene-sql
+        depends_on:
+          - zamene-sql       
