@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using zaMene.Model;
 using zaMene.Model.SearchObjects;
 using zaMene.Services;
@@ -13,12 +14,12 @@ namespace zaMene.API.Controllers
             _service = service;
         }
 
+        
         [HttpPost]
         public virtual TModel Insert(TInsert request)
         {
             return _service.Insert(request);
         }
-
 
         [HttpPut("{id}")]
         public virtual TModel Update(int id, TUpdate request)
