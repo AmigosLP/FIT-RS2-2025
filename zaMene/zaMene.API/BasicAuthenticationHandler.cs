@@ -61,6 +61,8 @@ namespace zaMene.API
                
                 var ticket = new AuthenticationTicket(principal, Scheme.Name);
                 return AuthenticateResult.Success(ticket);
+
+                // upamti string:string kad auth radis
             }
         }
     }

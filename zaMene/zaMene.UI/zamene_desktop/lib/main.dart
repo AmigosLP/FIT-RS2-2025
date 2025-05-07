@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:zamene_desktop/layouts/master_screen.dart';
+import 'package:zamene_desktop/providers/auth_provider.dart';
+import 'package:zamene_desktop/providers/user_provider.dart';
+import 'package:zamene_desktop/screens/nekretnine_screen.dart';
+import 'package:zamene_desktop/screens/users_list_screen.dart';
+import 'package:zamene_desktop/screens/users_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,12 +34,86 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue, primary: Colors.blue),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: LoginPage(),
     );
   }
 }
+
+class LoginPage extends StatelessWidget {
+  LoginPage({super.key});
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Login"),),
+      body: Center(
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 400, maxWidth: 400),
+            child: Card(
+            child: Column(
+              children: [
+                Image.asset("assets/images/logo.png", height: 100, width: 100,),
+                // Image.network("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAWUJxUSwh9OJgEkpoaK9RZOsn0nU6Ed_TYw&s", height: 100, width: 100,),
+                const SizedBox(height: 40,),
+                TextField(controller: _usernameController, decoration: InputDecoration(labelText: "Username", prefixIcon: Icon(Icons.email)),),
+                SizedBox(height: 40,),
+                TextField(controller: _passwordController, decoration: InputDecoration(labelText: "Password", prefixIcon: Icon(Icons.password)),),
+                SizedBox(height: 40,),
+                ElevatedButton(
+              onPressed: () async {
+  String username = _usernameController.text;
+  String password = _passwordController.text;
+
+  try {
+    UserProvider provider = UserProvider();
+    var user = await provider.login(username, password); // ovo je tvoj novi login
+
+    // Čuvamo originalne kredencijale za Authorization header
+    AuthProvider.username = username;
+    AuthProvider.password = password;
+
+    // Čuvamo pravo ime korisnika za prikaz u zaglavlju
+    if (user != null && user['firstName'] != null) {
+      AuthProvider.displayName = user['firstName']; // Dodaj u AuthProvider
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => NekretnineScreen()), 
+    );
+  } catch (e) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Greška"),
+        content: Text(e.toString()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+},
+                  child: Text("login")),
+              ],
+            ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
