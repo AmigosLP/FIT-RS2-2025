@@ -55,10 +55,10 @@ namespace zaMene.Services
         public TModel GetById(int id)
         {
             var entity = _context.Set<TDbEntity>().Find(id);
-            if(entity != null)
+            if (entity != null)
             {
                 return Mapper.Map<TModel>(entity);
-            }    
+            }
             else
             {
                 return null;

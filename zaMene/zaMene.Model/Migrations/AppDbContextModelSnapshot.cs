@@ -63,8 +63,9 @@ namespace zaMene.Model.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PropertyID"));
 
-                    b.Property<decimal>("Address")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("AgentID")
                         .HasColumnType("int");
@@ -83,6 +84,9 @@ namespace zaMene.Model.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
@@ -105,6 +109,28 @@ namespace zaMene.Model.Migrations
                     b.HasIndex("AgentID");
 
                     b.ToTable("Properties");
+                });
+
+            modelBuilder.Entity("zaMene.Model.PropertyImage", b =>
+                {
+                    b.Property<int>("PropertyImageID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PropertyImageID"));
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PropertyID")
+                        .HasColumnType("int");
+
+                    b.HasKey("PropertyImageID");
+
+                    b.HasIndex("PropertyID");
+
+                    b.ToTable("PropertyImages");
                 });
 
             modelBuilder.Entity("zaMene.Model.Reservation", b =>
@@ -277,6 +303,17 @@ namespace zaMene.Model.Migrations
                     b.Navigation("Agent");
                 });
 
+            modelBuilder.Entity("zaMene.Model.PropertyImage", b =>
+                {
+                    b.HasOne("zaMene.Model.Property", "Property")
+                        .WithMany("Images")
+                        .HasForeignKey("PropertyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
             modelBuilder.Entity("zaMene.Model.Reservation", b =>
                 {
                     b.HasOne("zaMene.Model.Property", "Property")
@@ -336,6 +373,8 @@ namespace zaMene.Model.Migrations
 
             modelBuilder.Entity("zaMene.Model.Property", b =>
                 {
+                    b.Navigation("Images");
+
                     b.Navigation("Reservations");
 
                     b.Navigation("Reviews");

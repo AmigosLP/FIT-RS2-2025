@@ -14,6 +14,7 @@ namespace zaMene.Model
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<PropertyImage> PropertyImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

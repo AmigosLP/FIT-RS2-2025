@@ -13,8 +13,11 @@ namespace zaMene.Services
 {
     public abstract class BaseCRUDService<TModel, TSearch, TDbEntity, TInsert, TUpdate> : BaseService<TModel, TSearch, TDbEntity> where TModel : class where TSearch : BaseSearchObject where TDbEntity : class
     {
+        protected readonly IMapper _mapper;
+
         public BaseCRUDService(AppDbContext context, IMapper mapper) : base(context, mapper)
         {
+            _mapper = mapper;
         }
 
         public TModel Insert(TInsert request)
@@ -71,5 +74,6 @@ namespace zaMene.Services
                 Mapper.Map(userUpdateDto, user);
             }
         }
+
     }
 }

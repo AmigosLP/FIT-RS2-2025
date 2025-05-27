@@ -79,7 +79,7 @@ class LoginPage extends StatelessWidget {
     AuthProvider.password = password;
 
     // Čuvamo pravo ime korisnika za prikaz u zaglavlju
-    if (user != null && user['firstName'] != null) {
+    if (user['firstName'] != null) {
       AuthProvider.displayName = user['firstName']; // Dodaj u AuthProvider
     }
 

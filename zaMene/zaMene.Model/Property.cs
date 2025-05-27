@@ -19,11 +19,12 @@ namespace zaMene.Model
         [Required]
         public decimal Price { get; set; }
 
-        public decimal Address {  get; set; }
+        public string Address {  get; set; }
 
         public string City { get; set; }
 
         public string Country { get; set; }
+        public string? ImageUrl { get; set; }
       
 
         [ForeignKey("Agent")]
@@ -35,5 +36,7 @@ namespace zaMene.Model
 
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
         public List<Review> Reviews { get; set; } = new List<Review>();
+        public List<PropertyImage> Images { get; set; } = new List<PropertyImage>();
+
     }
 }

@@ -18,9 +18,11 @@ class UserProvider {
       if (isValidResponse(response)) {
         var data = jsonDecode(response.body);
         return data;
-      } else (
-        throw new Exception("Unknown exception")
+      } else {
+        (
+        throw Exception("Unknown exception")
       );
+      }
   }
 
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -41,9 +43,9 @@ class UserProvider {
     if(response.statusCode < 299) {
       return true;
     } else if (response.statusCode == 401) {
-      throw new Exception("Unathorized");
+      throw Exception("Unathorized");
     } else {
-      throw new Exception("Something went wrong");
+      throw Exception("Something went wrong");
     }
   }
 
