@@ -17,7 +17,7 @@ class MasterScreen extends StatefulWidget {
 
 class _MasterScreenState extends State<MasterScreen> {
   String _userName = "";
-  
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +37,7 @@ class _MasterScreenState extends State<MasterScreen> {
             _navButton("Nekretnine", NekretnineScreen()),
             _navButton("Recenzije", RecenzijeScreen()),
             _navButton("Dashboard", StatisticsScreen()),
+
             if (_userName.isNotEmpty)
               TextButton(
                 onPressed: null, // Neaktivno dugme
@@ -52,33 +53,28 @@ class _MasterScreenState extends State<MasterScreen> {
     );
   }
 
-  Widget _navButton(String title, Widget page) {
+  Widget _navButton(String title, Widget screen) {
     return TextButton(
       onPressed: () {
-       Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (context) => page),
-       );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => screen),
+        );
       },
       child: Text(title, style: TextStyle(color: Colors.white)),
     );
   }
 
   Widget _backButton(BuildContext context) {
-    return TextButton(
+    return IconButton(
+      icon: Icon(Icons.home, color: Colors.white),
       onPressed: () {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => LoginPage()),
           (Route<dynamic> route) => false,
         );
       },
-      child: Row(
-        children: [
-          Icon(Icons.arrow_back, color: Colors.white, size: 18),
-          SizedBox(width: 4),
-          Text('Back', style: TextStyle(color: Colors.white)),
-        ],
-      ),
+      tooltip: 'Povratak na login',
     );
   }
 }

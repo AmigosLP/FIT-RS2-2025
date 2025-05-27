@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:zamene_desktop/layouts/master_screen.dart';
 
 class NekretnineScreen extends StatefulWidget {
+  const NekretnineScreen({super.key});
+
   @override
   _NekretnineScreenState createState() => _NekretnineScreenState();
 }
@@ -125,8 +127,7 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 30),
-              const SizedBox(height: 40),
+              const SizedBox(height: 10),
               TextField(
                 onChanged: (value) => filterPonude(value),
                 decoration: InputDecoration(

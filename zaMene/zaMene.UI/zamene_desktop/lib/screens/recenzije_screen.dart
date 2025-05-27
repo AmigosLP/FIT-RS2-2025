@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:zamene_desktop/layouts/master_screen.dart';
 
 class RecenzijeScreen extends StatefulWidget {
+  const RecenzijeScreen({super.key});
+
   @override
-  State<StatefulWidget> createState() {
-    // TODO: implement createState
-    throw UnimplementedError();
-  }
+  _RecenzijeScreenState createState() => _RecenzijeScreenState();
 }
 
 class _RecenzijeScreenState extends State<RecenzijeScreen> {

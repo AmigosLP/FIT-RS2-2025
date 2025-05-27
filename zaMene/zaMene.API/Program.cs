@@ -6,14 +6,28 @@ using zaMene.API.Filters;
 using Microsoft.AspNetCore.Authentication;
 using zaMene.API;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Add Mapster configuration
 builder.Services.AddSingleton<IMapper, Mapper>();
 
 // Add services to the container.
 builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddScoped<IPropertyService, PropertyService>();
+builder.Services.AddTransient<IReviewService, ReviewService>(); 
 
 builder.Services.AddControllers(x =>
 {
@@ -53,8 +67,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAuthentication("BasicAuthentication")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
-var app = builder.Build();
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600;
+});
 
+var app = builder.Build();
+app.UseStaticFiles();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
