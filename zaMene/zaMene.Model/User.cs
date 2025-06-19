@@ -17,14 +17,19 @@ namespace zaMene.Model
         [Required, MaxLength(100)]
         public string LastName { get; set; }
 
+        [Required, MaxLength(100)]
+        public string Username { get; set; }
+
         [Required, EmailAddress, MaxLength(255)]
         public string Email { get; set; }
 
         [Required]
         public string PasswordHash { get; set; }
+        public string? Gender { get; set; }
+        public string? ProfileImagePath { get; set; }
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public DateTime RegistrationDate {  get; set; } = DateTime.Now;
-        public string Phone { get; set; }
+        public string? Phone { get; set; }
 
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
         public List<Review> Reviews { get; set; } = new List<Review>();

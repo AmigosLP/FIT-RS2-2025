@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageGalleryScreen extends StatefulWidget {
   final List<String> images;
@@ -51,13 +52,11 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
         itemBuilder: (context, index) {
           return InteractiveViewer(
             child: Center(
-              child: Image.network(
-                widget.images[index],
+              child: CachedNetworkImage(
+                imageUrl: widget.images[index],
                 fit: BoxFit.contain,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return const Center(child: CircularProgressIndicator());
-                },
+                placeholder: (context, url) => const CircularProgressIndicator(),
+                errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.white),
               ),
             ),
           );

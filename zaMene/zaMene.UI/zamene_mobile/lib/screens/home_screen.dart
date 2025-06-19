@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:zamene_mobile/models/property_model.dart';
 import 'package:zamene_mobile/screens/property_detail_screen.dart';
 import 'package:zamene_mobile/services/property_service.dart';
 import 'package:zamene_mobile/providers/auth_provide.dart';
+import 'package:zamene_mobile/screens/user_profile_screen.dart';
+import 'package:zamene_mobile/services/user_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,29 +23,41 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String filterTekst = '';
   String selektovaniGrad = 'Sarajevo';
+  String? profilePictureUrl;
 
   late Future<List<PropertyModel>> nekretnineFuture;
 
   Future<void> loadPropertiesWithRatings() async {
-  final properties = await PropertyService().getAllProperties();
-  
-  for (var property in properties) {
-    property.averageRating = await PropertyService().getAveragePropertyRating(property.propertyID);
+    final properties = await PropertyService().getAllProperties();
+    for (var property in properties) {
+      property.averageRating =
+          await PropertyService().getAveragePropertyRating(property.propertyID);
+    }
+
+    setState(() {
+      nekretnineFuture = Future.value(properties);
+    });
   }
 
-  setState(() {
-    nekretnineFuture = Future.value(properties);
-  });
-}
+  Future<void> loadProfilnaSlika() async {
+    try {
+      final profil = await UserService().getUserProfile();
+      setState(() {
+        profilePictureUrl = profil['profileImageUrl'];
+      });
+    } catch (e) {
+      print("Greška prilikom učitavanja profilne slike: $e");
+    }
+  }
 
+  File? profilnaSlika;
 
   @override
   void initState() {
     super.initState();
-    AuthProvider.username = "string";
-    AuthProvider.password = "string";
     nekretnineFuture = Future.value([]);
     loadPropertiesWithRatings();
+    loadProfilnaSlika();
   }
 
   final List<String> gradovi = [
@@ -59,11 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-
+        onTap: (index) async {
           if (index == 1) {
             _scrollController.animateTo(
               250,
@@ -71,6 +83,17 @@ class _HomeScreenState extends State<HomeScreen> {
               curve: Curves.easeInOut,
             );
             FocusScope.of(context).requestFocus(_searchFocusNode);
+          } else if (index == 3) {
+            // Navigacija na profil i refresh slike nakon povratka
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UserProfileScreen()),
+            );
+            await loadProfilnaSlika();
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -119,16 +142,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  const CircleAvatar(
-                    backgroundImage: AssetImage("assets/images/user.png"),
+                  CircleAvatar(
                     radius: 20,
-                  )
+                    backgroundImage: profilePictureUrl != null
+                        ? NetworkImage(profilePictureUrl!)
+                        : const AssetImage("assets/images/user.png")
+                            as ImageProvider,
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
               Text(
                 "Dobrodošao, ${AuthProvider.displayName ?? 'Korisniče'}!",
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const Text("#zaMene", style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 20),
@@ -204,9 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       .where((p) =>
                           (p.city == selektovaniGrad) &&
                           (aktivnaKategorija == 'All') &&
-                          (p.title.toLowerCase().contains(filterTekst.toLowerCase())))
-                      .toList();
-
+                          (p.title?.toLowerCase().contains(filterTekst.toLowerCase()) ?? false)).toList();
                   if (properties.isEmpty) {
                     return const Center(child: Text("Nema rezultata."));
                   }
@@ -231,98 +256,101 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-Widget _buildCard(PropertyModel p) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PropertyDetailScreen(
-            nekretnina: {
-              'propertyID': p.propertyID,
-              'naziv': p.title,
-              'cijena': "${p.price} BAM",
-              'adresa': p.address.toString(),
-              'ocjena': p.averageRating.toString(),
-              'slika': p.imageUrls != null && p.imageUrls!.isNotEmpty ? p.imageUrls!.first : 'assets/images/default.png',
-              'imagesUrls': p.imageUrls
-            },
-          ),
-        ),
-      );
-    },
-    child: Container(
-      width: 180,
-      height: 100, // ukupna visina kartice
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Slika zauzima pola visine kartice (150)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 100,
-              width: double.infinity,
-              child: p.imageUrls != null && p.imageUrls!.isNotEmpty 
-              ? Image.network(
-                p.imageUrls!.first,
-                fit: BoxFit.cover,
-              ) : Image.asset(
-                'assets/images/placeholder.jpg',
-                fit: BoxFit.cover,
-              ),
+
+  Widget _buildCard(PropertyModel p) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PropertyDetailScreen(
+              nekretnina: {
+                'propertyID': p.propertyID,
+                'naziv': p.title,
+                'cijena': "${p.price} BAM",
+                'adresa': p.address.toString(),
+                'grad': p.city,
+                'ocjena': p.averageRating != null ? p.averageRating!.toString() : 'Nema ocjene',
+                'slika': p.imageUrls != null && p.imageUrls!.isNotEmpty
+                    ? p.imageUrls!.first
+                    : 'assets/images/default.png',
+                'imagesUrls': p.imageUrls ?? [],
+                'description': p.description ?? '',
+              },
             ),
           ),
-
-          const SizedBox(height: 12), // malo prostora ispod slike
-
-          // Naslov i grad su u zasebnoj koloni da budu složeni
-          Text(
-            p.title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            p.city,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-
-          const Spacer(), // gura donji red s cijenom i ocjenom na dno
-
-          Row(
-            children: [
-              Text(
-                "${p.price} BAM",
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        );
+      },
+      child: Container(
+        width: 180,
+        height: 100,
+        margin: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 100,
+                width: double.infinity,
+                child: p.imageUrls != null && p.imageUrls!.isNotEmpty
+                    ? Image.network(
+                        p.imageUrls!.first,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.asset(
+                        'assets/images/placeholder.jpg',
+                        fit: BoxFit.cover,
+                      ),
               ),
-              const Spacer(),
-              const Icon(Icons.star, size: 16, color: Colors.amber),
-              Text(
-                (p.averageRating ?? 0.0).toStringAsFixed(1),
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              p.title ?? '',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              p.city ?? '',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Text(
+                  "${p.price} BAM",
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                const Icon(Icons.star, size: 16, color: Colors.amber),
+                Text(
+                  (p.averageRating ?? 0.0).toStringAsFixed(1),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

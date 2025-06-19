@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using zaMene.Model;
 
 namespace zaMene.Model
@@ -18,6 +20,22 @@ namespace zaMene.Model
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<IdentityUserLogin<int>>(b =>
+            {
+                b.HasKey(login => new { login.LoginProvider, login.ProviderKey });
+            });
+
+            modelBuilder.Entity<IdentityUserRole<int>>(b =>
+            {
+                b.HasKey(r => new { r.UserId, r.RoleId });
+            });
+
+            modelBuilder.Entity<IdentityUserToken<int>>(b =>
+            {
+                b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
+            });
 
             // Unique constraint za email korisnika
             modelBuilder.Entity<User>()

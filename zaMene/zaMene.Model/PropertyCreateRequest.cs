@@ -24,7 +24,6 @@ namespace zaMene.Model
         public int RoomCount { get; set; }
         public decimal Area { get; set; }
 
-        // Za upload slika
         public List<IFormFile> Images { get; set; }
     }
 }

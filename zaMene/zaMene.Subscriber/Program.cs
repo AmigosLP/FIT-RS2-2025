@@ -1,26 +1,25 @@
-﻿// See https://aka.ms/new-console-template for more information
-using EasyNetQ;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using zaMene.Subscriber;
+using DotNetEnv;
+using EmailConsumer;
+
 class Program
 {
     static void Main(string[] args)
     {
-        //var builder = new ConfigurationBuilder()
-        //    .SetBasePath(Directory.GetCurrentDirectory())
-        //    .AddJsonFile("appsettings.json")
-        //    .AddEnvironmentVariables();
+        Env.Load();
 
-        //var configuration = builder.Build();
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
+            .Build();
 
-        //var emailService = new EmailService(configuration);
+        var emailService = new EmailService(config);
+        var consumer = new RegistrationEmailConsumer(config, emailService);
+        consumer.StartConsuming();
 
-        //var reservationEmailConsumer = new ReservationEmailConsumer(configuration, emailService);
-        //reservationEmailConsumer.SendEmail();
-        //Console.WriteLine("Reservation Email Consumer started");
-        //Thread.Sleep(Timeout.Infinite);
-
-
-        //konfiguracija u toku...
+        Console.WriteLine("Email consumer started...");
+        Thread.Sleep(Timeout.Infinite);
     }
 }
-

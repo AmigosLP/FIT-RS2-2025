@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:zamene_mobile/providers/auth_provide.dart';
-import 'package:zamene_mobile/providers/user_provider.dart';
+import 'package:zamene_mobile/services/user_service.dart';
 import 'home_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,9 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await UserService().login(username, password);
 
-      AuthProvider.username = username;
+      AuthProvider.username = user['username']; 
       AuthProvider.password = password;
-      AuthProvider.displayName = user['firstName'];
+
+      AuthProvider.displayName = "${user['firstName']} ${user['lastName']}";
+
 
       Navigator.pushReplacement(
         context,
@@ -53,6 +56,13 @@ class _LoginScreenState extends State<LoginScreen> {
         _loading = false;
       });
     }
+  }
+
+  void _goToRegister() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+    );
   }
 
   @override
@@ -89,6 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _login,
                       child: const Text("Prijavi se"),
                     ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: _goToRegister,
+                child: const Text("Nemate račun? Registruj se"),
+              ),
             ],
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zamene_desktop/main.dart';
 import 'package:zamene_desktop/providers/auth_provider.dart';
 import 'package:zamene_desktop/screens/dashboard_screen.dart';
+import 'package:zamene_desktop/screens/login_screen.dart';
 import 'package:zamene_desktop/screens/nekretnine_screen.dart';
 import 'package:zamene_desktop/screens/recenzije_screen.dart';
 // import 'package:zamene_desktop/screens/properties_screen.dart'; // obavezno kreiraj ili dummy file
