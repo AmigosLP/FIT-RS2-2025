@@ -41,6 +41,17 @@ namespace zaMene.Services
                     throw new Exception("User with this email already exists.");
                 }
 
+                if (_context.Users.AnyAsync(u => u.Username == userDto.Username).Result)
+                {
+                    throw new Exception("User with this username already exists.");
+                }
+
+                if (_context.Users.AnyAsync(u => u.FirstName == userDto.FirstName && 
+                u.LastName == userDto.LastName).Result)
+                {
+                    throw new Exception("User with this first and last name already exists.");
+                }
+
                 // Hashiranje lozinke
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
                 user.RegistrationDate = DateTime.UtcNow; // Setovanje datuma registracije
@@ -74,6 +85,5 @@ namespace zaMene.Services
                 Mapper.Map(userUpdateDto, user);
             }
         }
-
     }
 }

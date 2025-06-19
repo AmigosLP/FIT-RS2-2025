@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 using zaMene.Model;
 using zaMene.Model.SearchObjects;
 
@@ -22,6 +23,40 @@ namespace zaMene.Services
                 query = query.Where(r => r.UserID == searchObject.UserID);
 
             return base.AddFilter(searchObject, query);
+        }
+
+        public async Task<ReviewDto> CreateReview(ReviewCreateDto request)
+        {
+            var review = _mapper.Map<Review>(request);
+            review.ReviewDate = DateTime.UtcNow;
+
+            _context.Reviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<ReviewDto>(review);
+        }
+
+        public async Task<List<ReviewDto>> GetReviewsByPropertyId(int propertyId)
+        {
+            var reviews = await _context.Reviews
+                .Include(r => r.User)
+                .Where(r => r.PropertyID == propertyId)
+                .OrderByDescending(r => r.ReviewID)
+                .ToListAsync();
+
+            var reviewsListDto = reviews.Select(r => new ReviewDto
+            {
+                ReviewID = r.ReviewID,
+                UserID = r.UserID,
+                PropertyID = r.PropertyID,
+                Rating = r.Rating,
+                Comment = r.Comment,
+                ReviewDate = r.ReviewDate,
+                UserFullName = r.User != null ? $"{r.User.FirstName} {r.User.LastName}" : "Nepoznat korisnik",
+                UserProfileImageUrl = r.User?.ProfileImagePath
+            }).ToList();
+
+            return reviewsListDto;
         }
     }
 }

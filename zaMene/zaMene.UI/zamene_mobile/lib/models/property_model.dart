@@ -4,21 +4,23 @@ part 'property_model.g.dart';
 @JsonSerializable()
 class PropertyModel {
   final int propertyID;
-  final String title;
-  final String city;
-  final double price;
-  final String address;
+  final String? title;
+  final String? description;
+  final String? city;
+  final double? price;
+  final String? address;
   double? averageRating;
   final List<String>? imageUrls;
 
   PropertyModel({
     required this.propertyID,
-    required this.title,
-    required this.city,
-    required this.price,
-    required this.address,
-    required this.averageRating,
-    required this.imageUrls
+    this.title,
+    this.description,
+    this.city,
+    this.price,
+    this.address,
+    this.averageRating,
+    this.imageUrls
   });
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) => _$PropertyModelFromJson(json);

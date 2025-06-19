@@ -7,16 +7,15 @@ class PropertyService {
   static const String baseUrl = 'http://10.0.2.2:5283/'; 
 
   Map<String, String> createHeaders() {
-    if (AuthProvider.username == null || AuthProvider.password == null) {
-      throw Exception("Korisnik nije autentificiran");
-    }
-    
-    final basicAuth = 'Basic ${base64Encode(utf8.encode('${AuthProvider.username}:${AuthProvider.password}'))}';
-    return {
-      "Content-Type": "application/json",
-      "Authorization": basicAuth,
-    };
+  if (AuthProvider.token == null || AuthProvider.token!.isEmpty) {
+    throw Exception("Korisnik nije autentificiran");
   }
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${AuthProvider.token}",
+  };
+}
+
 
   Future<List<PropertyModel>> getAllProperties() async {
     final headers = createHeaders();
