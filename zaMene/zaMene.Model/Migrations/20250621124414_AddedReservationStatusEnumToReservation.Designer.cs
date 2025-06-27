@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using zaMene.Model;
 
@@ -11,9 +12,11 @@ using zaMene.Model;
 namespace zaMene.Model.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250621124414_AddedReservationStatusEnumToReservation")]
+    partial class AddedReservationStatusEnumToReservation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -154,12 +157,6 @@ namespace zaMene.Model.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<bool>("isTopProperty")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("viewCount")
-                        .HasColumnType("int");
 
                     b.HasKey("PropertyID");
 

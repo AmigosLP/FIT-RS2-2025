@@ -38,5 +38,8 @@ namespace zaMene.Model
         public List<Review> Reviews { get; set; } = new List<Review>();
         public List<PropertyImage> Images { get; set; } = new List<PropertyImage>();
 
+        public int viewCount { get; set; }
+        public bool isTopProperty { get; set; }
+
     }
 }

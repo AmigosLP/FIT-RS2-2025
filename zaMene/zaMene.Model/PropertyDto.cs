@@ -15,6 +15,9 @@ namespace zaMene.Model
         public string Country { get; set; }
         public string Address { get; set; }
         public int AgentID { get; set; }
+        public string AgentFullName { get; set; }
+        public string? AgentProfileImageUrl { get; set; }
+        public string? AgentPhoneNumber { get; set; }
         public int RoomCount { get; set; }
         public decimal Area { get; set; }
         public double AverageRating { get; set; }

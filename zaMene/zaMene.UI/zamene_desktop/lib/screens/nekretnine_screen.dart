@@ -25,7 +25,8 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
   }
 
   Future<void> ucitajNekretnine() async {
-    final uri = Uri.parse('http://localhost:5283/api/Property/with-images');
+    const baseImageUrl = 'http://localhost:5283';
+    final uri = Uri.parse('$baseImageUrl/api/Property/with-images');
     final headers = await getAuthHeader();
     final response = await http.get(uri, headers: headers);
 
@@ -34,6 +35,9 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
 
       setState(() {
         topPonude = data.map<Map<String, dynamic>>((item) {
+          List imageList = item['imageUrls'] ?? [];
+          final String slika = imageList.isNotEmpty ? imageList[0] : "";
+
           return {
             'id': item['propertyID'],
             'naziv': item['title'] ?? '',
@@ -45,10 +49,8 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
             'agentId': item['agentID'],
             'sobe': item['roomCount'],
             'kvadratura': item['area'],
-            'slika': (item['imageUrls'] != null && (item['imageUrls'] as List).isNotEmpty)
-                ? item['imageUrls'][0]
-                : '',
-            'slike': item['imageUrls'] ?? [],
+            'slika': slika,
+            'slike': imageList,
           };
         }).toList();
 
@@ -71,73 +73,59 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
   Future<Map<String, String>> getAuthHeader() async {
     const secureStorage = FlutterSecureStorage();
     final token = await secureStorage.read(key: "token");
-    print("Token iz storage-a: $token");
     return {"Authorization": "Bearer $token"};
   }
 
-  Future<void> posaljiNaBackend(PropertyCreateModel model) async {
-    final uri = Uri.parse("http://localhost:5283/api/Property/create-with-images");
-    final request = http.MultipartRequest('POST', uri);
-
+  Future<void> obrisiNekretninu(int id) async {
+    final uri = Uri.parse('http://localhost:5283/api/Property/$id');
     final headers = await getAuthHeader();
-    request.headers.addAll(headers);
 
-    await model.dodaj(request);
+    final response = await http.delete(uri, headers: headers);
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (isValidResponse(response)) {
-      print("Uspješno poslan zahtjev na backend");
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nekretnina uspješno obrisana.'),
+          backgroundColor: Colors.green,
+        ),
+      );
       await ucitajNekretnine();
     } else {
-      print("Greška prilikom slanja na backend: ${response.statusCode}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Greška pri brisanju: ${response.statusCode}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  Future<void> obrisiNekretninu(int id) async {
-  final uri = Uri.parse('http://localhost:5283/api/Property/$id');
-  final headers = await getAuthHeader();
-
-  final response = await http.delete(uri, headers: headers);
-
-  if (response.statusCode == 200) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Nekretnina uspješno obrisana.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-    await ucitajNekretnine();
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Greška pri brisanju: ${response.statusCode}'),
-        backgroundColor: Colors.red,
-      ),
-    );
+  String fixImageUrl(String url) {
+    return url.replaceAll('10.0.2.2', 'localhost');
   }
-}
 
-  bool isValidResponse(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return true;
-    } else if (response.statusCode >= 400 && response.statusCode < 500) {
-      final errorBody = jsonDecode(response.body);
-      final message = errorBody['message'] ?? "Došlo je do greške. Pokušajte ponovo.";
-      throw message;
-    } else if (response.statusCode >= 500) {
-      throw "Greška na serveru. Pokušajte kasnije.";
-    } else {
-      throw "Neočekivana greška. Pokušajte ponovo.";
-    }
+  Widget _ikonicaSaTekstom(IconData ikon, String tekst) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(ikon, size: 18, color: Colors.blueGrey[700]),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            tekst,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Administracija Nekretnina")),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,133 +139,160 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
               onChanged: _filtrirajPonude,
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 3 / 2,
-              children: filteredPonude.map((ponuda) {
-                return Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-          //               ClipRRect(
-          //   borderRadius: const BorderRadius.only(
-          //     topLeft: Radius.circular(15.0),
-          //     topRight: Radius.circular(15.0),
-          //   ),
-          //   child: Container(
-          //     width: double.infinity,
-          //     height: 350.0,
-          //     color: Colors.grey[300],
-          //     child: Image(
-          //       image: ponuda['slika'] != null && ponuda['slika'].toString().isNotEmpty
-          //               ? Image.network(
-          //                ponuda['slika'],) : '',
-          //       fit: BoxFit.fill,
-          //     ),
-          //   ),
-          // ),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                            child: ponuda['slika'].toString().isNotEmpty
-                                ? Image.network(
-                                    ponuda['slika'],
-                                    height: 80,
-                                    width: double.infinity,
-                                    fit: BoxFit.fill,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        height: 80,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.image, size: 40),
-                                      );
-                                    },
-                                  )
-                                : Container(
-                                    height: 80,
-                                    color: Colors.blue[300],
-                                    child: const Icon(Icons.image, size: 40),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  int crossAxisCount = 3;
+
+                  if (constraints.maxWidth < 800) {
+                    crossAxisCount = 1;
+                  } else if (constraints.maxWidth < 1200) {
+                    crossAxisCount = 2;
+                  }
+
+                  return GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 3 / 3,
+                    children: filteredPonude.map((ponuda) {
+                      return Card(
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: LayoutBuilder(
+                            builder: (context, cardConstraints) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: cardConstraints.maxWidth * 0.6,
+                                      width: double.infinity,
+                                      color: Colors.grey[200],
+                                      child: ponuda['slika'].toString().isNotEmpty
+                                          ? Image.network(
+                                              fixImageUrl(ponuda['slika']),
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) =>
+                                                      Container(
+                                                color: Colors.grey[300],
+                                                child:
+                                                    const Icon(Icons.error, size: 40),
+                                              ),
+                                            )
+                                          : Container(
+                                              color: Colors.blue[300],
+                                              child: const Icon(Icons.image, size: 40),
+                                            ),
+                                    ),
                                   ),
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          ponuda['naziv'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                        ),
-                        Text("Cijena: ${ponuda['cijena'] ?? ''}"),
-                        Text("Grad: ${ponuda['grad'] ?? ''}"),
-                        Text("Kvadratura: ${ponuda['kvadratura'] ?? ''} m²"),
-                        const SizedBox(height: 100),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.edit),
-                              label: const Text("Uredi"),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(100, 40),
-                                textStyle: const TextStyle(fontSize: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed: () {
-                                // TODO: Dodaj funkcionalnost za uređivanje
-                                print("Kliknuto Uredi na nekretnini ID: ${ponuda['id']}");
-                              },
-                            ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.delete),
-                              label: const Text("Obriši"),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(100, 40),
-                                textStyle: const TextStyle(fontSize: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text("Potvrda"),
-                                    content: const Text("Da li ste sigurni da zelite obrisati ovu nekretninu?"),
-                                    actions: [
-                                      TextButton(
-                                        child: const Text("Ne"),
-                                        onPressed: () => Navigator.pop(context, false),
+                                  const SizedBox(height: 12),
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                        maxWidth: cardConstraints.maxWidth * 0.9),
+                                    child: Text(
+                                      ponuda['naziv'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
                                       ),
-                                      TextButton(
-                                        child: const Text("Da"),
-                                        onPressed: () => Navigator.pop(context, true),
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 16,
+                                    runSpacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      _ikonicaSaTekstom(
+                                          Icons.monetization_on,
+                                          ponuda['cijena'] ?? ''),
+                                      _ikonicaSaTekstom(Icons.square_foot,
+                                          '${ponuda['kvadratura'] ?? ''} m²'),
+                                      _ikonicaSaTekstom(
+                                          Icons.location_on,
+                                          '${ponuda['grad'] ?? ''}, ${ponuda['drzava'] ?? ''}'),
+                                      _ikonicaSaTekstom(Icons.description,
+                                          ponuda['opis'] ?? ''),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Wrap(
+                                    spacing: 16,
+                                    alignment: WrapAlignment.center,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.edit),
+                                        label: const Text("Uredi"),
+                                        style: ElevatedButton.styleFrom(
+                                          minimumSize: const Size(100, 36),
+                                          textStyle: const TextStyle(fontSize: 14),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          print(
+                                              "Kliknuto Uredi na nekretnini ID: ${ponuda['id']}");
+                                        },
+                                      ),
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.delete),
+                                        label: const Text("Obriši"),
+                                        style: ElevatedButton.styleFrom(
+                                          minimumSize: const Size(100, 36),
+                                          textStyle: const TextStyle(fontSize: 14),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text("Potvrda"),
+                                              content: const Text(
+                                                  "Da li ste sigurni da želite obrisati ovu nekretninu?"),
+                                              actions: [
+                                                TextButton(
+                                                  child: const Text("Ne"),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, false),
+                                                ),
+                                                TextButton(
+                                                  child: const Text("Da"),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, true),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await obrisiNekretninu(ponuda['id']);
+                                            ucitajNekretnine();
+                                          }
+                                        },
                                       ),
                                     ],
                                   ),
-                                );
-                                if (confirm == true) {
-                                  await obrisiNekretninu(ponuda['id']);
-                                  ucitajNekretnine();
-                                }
-                              },
-                            ),
-                          ],
+                                ],
+                              );
+                            },
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -304,7 +319,8 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
 
 class DodajNekretninuForma extends StatefulWidget {
   final VoidCallback onSubmitted;
-  const DodajNekretninuForma({Key? key, required this.onSubmitted}) : super(key: key);
+  const DodajNekretninuForma({Key? key, required this.onSubmitted})
+      : super(key: key);
 
   @override
   State<DodajNekretninuForma> createState() => _DodajNekretninuFormaState();
@@ -315,7 +331,6 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   final nazivController = TextEditingController();
   final cijenaController = TextEditingController();
   final spavaceSobeController = TextEditingController();
-  final toaletController = TextEditingController();
   final gradController = TextEditingController();
   final opisController = TextEditingController();
   final adresaController = TextEditingController();
@@ -357,7 +372,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       address: adresaController.text,
       city: gradController.text,
       country: drzavaController.text,
-      agentId: 1, // ako koristiš dinamički agentId, zamijeni
+      agentId: 1, // Promijeni ako imaš dinamički agentId
       roomCount: int.parse(spavaceSobeController.text),
       area: double.parse(kvadraturaController.text),
       images: _slike,
@@ -371,9 +386,8 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
-    if (isValidResponse(response)) {
-      print("Uspješno poslan zahtjev na backend");
 
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Nekretnina je uspješno dodana."),
@@ -382,22 +396,26 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       );
       widget.onSubmitted();
     } else {
-      print("Greška pri slanju: ${response.statusCode}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Greška pri slanju: ${response.statusCode}"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  bool isValidResponse(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return true;
-    } else if (response.statusCode >= 400 && response.statusCode < 500) {
-      final errorBody = jsonDecode(response.body);
-      final message = errorBody['message'] ?? "Došlo je do greške. Pokušajte ponovo.";
-      throw message;
-    } else if (response.statusCode >= 500) {
-      throw "Greška na serveru. Pokušajte kasnije.";
-    } else {
-      throw "Neočekivana greška. Pokušajte ponovo.";
-    }
+  @override
+  void dispose() {
+    nazivController.dispose();
+    cijenaController.dispose();
+    spavaceSobeController.dispose();
+    gradController.dispose();
+    opisController.dispose();
+    adresaController.dispose();
+    drzavaController.dispose();
+    kvadraturaController.dispose();
+    super.dispose();
   }
 
   @override
@@ -419,7 +437,8 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                 TextFormField(
                   controller: nazivController,
                   decoration: const InputDecoration(labelText: "Naziv"),
-                  validator: (value) => (value == null || value.isEmpty) ? "Unesite naziv" : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? "Unesite naziv" : null,
                 ),
                 TextFormField(
                   controller: cijenaController,
@@ -427,13 +446,15 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite cijenu";
-                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
+                    if (double.tryParse(value) == null)
+                      return "Unesite ispravan broj";
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: spavaceSobeController,
-                  decoration: const InputDecoration(labelText: "Broj spavaćih soba"),
+                  decoration:
+                      const InputDecoration(labelText: "Broj spavaćih soba"),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite broj soba";
@@ -447,30 +468,35 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite kvadraturu";
-                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
+                    if (double.tryParse(value) == null)
+                      return "Unesite ispravan broj";
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: gradController,
                   decoration: const InputDecoration(labelText: "Grad"),
-                  validator: (value) => (value == null || value.isEmpty) ? "Unesite grad" : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? "Unesite grad" : null,
                 ),
                 TextFormField(
                   controller: drzavaController,
                   decoration: const InputDecoration(labelText: "Država"),
-                  validator: (value) => (value == null || value.isEmpty) ? "Unesite državu" : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? "Unesite državu" : null,
                 ),
                 TextFormField(
                   controller: adresaController,
                   decoration: const InputDecoration(labelText: "Adresa"),
-                  validator: (value) => (value == null || value.isEmpty) ? "Unesite adresu" : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? "Unesite adresu" : null,
                 ),
                 TextFormField(
                   controller: opisController,
                   decoration: const InputDecoration(labelText: "Opis"),
                   maxLines: 3,
-                  validator: (value) => (value == null || value.isEmpty) ? "Unesite opis" : null,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? "Unesite opis" : null,
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(

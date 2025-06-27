@@ -64,11 +64,12 @@ class UserProvider {
       ).value;
 
       if (userRole.toLowerCase() != 'admin') {
-        throw NotAdminException("Moraš biti admin da bi pristupio ovoj aplikaciji.");
+        throw NotAdminException("Aplikacija dostupna jedino za admin korisnike!");
       }
 
       // Spremi token ako je admin
       await _secureStorage.write(key: 'token', value: token);
+      AuthProvider.token = token;
 
     } else {
       throw Exception("Invalid username or password.");

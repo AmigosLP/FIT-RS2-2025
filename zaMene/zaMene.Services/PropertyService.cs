@@ -41,6 +41,7 @@ namespace zaMene.Services
         {
             var properties = await _context.Properties
                 .Include(p => p.Images)
+                .Include(p => p.Agent)
                 .ToListAsync();
 
             return properties.Select(p => new
@@ -55,7 +56,9 @@ namespace zaMene.Services
                 p.AgentID,
                 p.RoomCount,
                 p.Area,
-                imageUrls = p.Images.Select(i => "http://10.0.2.2:5283" + i.ImageUrl).ToList()
+                imageUrls = p.Images.Select(i => "http://10.0.2.2:5283" + i.ImageUrl).ToList(),
+                AgentFullName = $"{p.Agent.FirstName} {p.Agent.LastName}",
+                AgentPhoneNumber = p.Agent.Phone
             });
         }
 
@@ -212,6 +215,7 @@ namespace zaMene.Services
         {
             var property = await _context.Properties
                 .Include(p => p.Images)
+                .Include(p => p.Agent)
                 .FirstOrDefaultAsync(p => p.PropertyID == propertyId);
 
             if (property == null)
@@ -229,7 +233,10 @@ namespace zaMene.Services
                 property.AgentID,
                 property.RoomCount,
                 property.Area,
-                imageUrls = property.Images.Select(i => "http://10.0.2.2:5283" + i.ImageUrl).ToList()
+                imageUrls = property.Images.Select(i => "http://localhost:5283" + i.ImageUrl).ToList(),
+                AgentFullName = $"{property.Agent.FirstName} {property.Agent.LastName}",
+                AgentImageUrl = property.Agent.ProfileImagePath,
+                AgentPhoneNumber = property.Agent.Phone
             };
         }
 
@@ -259,5 +266,27 @@ namespace zaMene.Services
                 property.PropertyID
             };
         }
+
+        public async Task<List<PropertyStatisticsDto>> GetPropertyStatistics()
+        {
+            var properties = await _context.Properties
+                .Include(p => p.Reservations)
+                .Include(p => p.Reviews)
+                .ToListAsync();
+
+            var stats = properties.Select(p => new PropertyStatisticsDto
+            {
+                PropertyID = p.PropertyID,
+                Title = p.Title,
+                City = p.City,
+                TotalReservation = p.Reservations.Count,
+                AverageRating = p.Reviews.Any() ? p.Reviews.Average(r => r.Rating) : 0,
+                ViewCount = p.viewCount,
+                IsTopProperty = p.isTopProperty
+            }).ToList();
+
+            return stats;
+        }
+
     }
 }

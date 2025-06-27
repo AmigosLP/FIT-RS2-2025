@@ -16,14 +16,14 @@ public class RabbitMqService
     {
         var factory = new ConnectionFactory()
         {
-            //HostName = _configuration["RabbitMQ:Host"],
-            HostName = "localhost",
-            //UserName = _configuration["RabbitMQ:Username"],
-            UserName = "guest",
-            //Password = _configuration["RabbitMQ:Password"],
-            Password = "guest",
-            //VirtualHost = _configuration["RabbitMQ:VirtualHost"] ?? "/"
-            VirtualHost = "/"
+            HostName = _configuration["RabbitMQ:Host"],
+            //HostName = "localhost",
+            UserName = _configuration["RabbitMQ:Username"],
+            //UserName = "guest",
+            Password = _configuration["RabbitMQ:Password"],
+            //Password = "guest",
+            VirtualHost = _configuration["RabbitMQ:VirtualHost"] ?? "/"
+            //VirtualHost = "/"
         };
 
         using var connection = factory.CreateConnection();

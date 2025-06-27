@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using zaMene.Model.Enums;
 
 
 namespace zaMene.Model
@@ -17,7 +18,7 @@ namespace zaMene.Model
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public decimal TotalPrice { get; set; }
-        public string Status { get; set; } // Moze bit aktivno, otkazeno ili zavrseno
+        public ReservationStatus Status { get; set; } = ReservationStatus.Aktivno;
         public DateTime ReservationDate { get; set; } = DateTime.UtcNow;
     }
 }

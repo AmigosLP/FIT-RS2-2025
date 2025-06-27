@@ -16,5 +16,9 @@ namespace zaMene.Model
         public string UserFullName { get; set; }
         public string? UserProfileImageUrl { get; set; }
         public DateTime ReviewDate { get; set; }
+        public string PropertyName { get; set; }
+        public string Description { get; set; }
+        public decimal Price { get; set; }
+        public string Address { get; set; }
     }
 }

@@ -12,5 +12,8 @@ namespace zaMene.Services
     {
         Task<ReviewDto> CreateReview(ReviewCreateDto request);
         Task<List<ReviewDto>> GetReviewsByPropertyId(int propertyId);
+        Task<List<ReviewDto>> GetAllReview();
+        Task<ReviewDto> UpdateReview(int id, ReviewUpdateDto request);
+        Task<bool> DeleteReview(int id);
     }
 }
