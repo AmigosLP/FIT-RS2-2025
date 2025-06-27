@@ -26,6 +26,11 @@ services:
         environment:
           - ConnectionStrings:DefaultConnection=Server=${SQL_HOST}, 1433;Database=${SQL_DATABASE};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True
           - ASPNETCORE_ENVIRONMENT=Development
+          - RabbitMQ_Host=zamene-rabitmq
+          - RabbitMQ_Username=${RABBITMQ_USER} 
+          - RabbitMQ_Password=${RABBITMQ_PASSWORD} 
+          - RabbitMQ_Virtualhost=/
+          - RABBITMQ_PORT=5672
         ports:
           - 5283:5283
         networks:
@@ -33,4 +38,60 @@ services:
         links:
           - zamene-sql
         depends_on:
-          - zamene-sql       
+          - zamene-sql
+          
+    #RABBIT_MQ
+    zamene-rabitmq:
+        image: rabbitmq:3.8-management-alpine
+        container_name: zamene
+        hostname: zamene
+        restart: unless-stopped
+        ports:
+          - 5283:5283  
+          - 15692:15692
+        expose:
+          - 5283
+          - 8080
+        environment:
+          - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER} 
+          - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD} 
+        depends_on:
+          - zamene-api
+        networks:
+          - zamene-api
+        volumes:
+          - ./docker_data/rabbitmq_data:/var/lib/rabbitmq
+          - ./docker_data/rabbitmq_logs:/var/log/rabbitmq
+        healthcheck:
+          test: ["CMD", "rabbitmqctl", "status"]
+          interval: 30s
+          timeout: 10s
+          retries: 5
+          
+    zamene-mailservice:
+        restart: unless-stopped
+        container_name: zamene-mailservice
+        hostname: zamene-mailservice
+        image: registration-email-consumer:latest
+        build: 
+            context: .
+            dockerfile: RegistrationEmailServiceDockerFile
+        environment:
+          - RabbitMQ_Host=erekreacija-rabbitmq
+          - RabbitMQ_Username=${RABBITMQ_USER} 
+          - RabbitMQ_Password=${RABBITMQ_PASSWORD} 
+          - RabbitMQ_Virtualhost=/
+          - RABBITMQ_PORT=5672
+          - Email=${EMAIL_FROM}
+          - EmailUsername=${SMTP_USER}
+          - Password=${SMTP_PASSWORD}
+          - Port=${SMTP_PORT} 
+          - Host=${SMTP_HOST}
+        # volumes:
+        #     - ./appsettings.json:/app/appsettings.json
+        depends_on:
+              zamene-rabbitmq:
+                condition: service_healthy
+        networks:
+           - zameneanet
+  

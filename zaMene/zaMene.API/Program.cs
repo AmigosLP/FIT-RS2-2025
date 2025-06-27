@@ -170,10 +170,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-//using (var scope = app.Services.CreateScope())
-//{
-//    var dataContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//    //dataContext.Database.EnsureCreated();
-//    dataContext.Database.Migrate();
-//}
+using (var scope = app.Services.CreateScope())
+{
+    var dataContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dataContext.Database.EnsureCreated();
+    dataContext.Database.Migrate();
+}
 app.Run();
