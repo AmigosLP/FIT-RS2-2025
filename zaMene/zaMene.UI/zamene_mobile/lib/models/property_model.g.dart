@@ -19,6 +19,9 @@ PropertyModel _$PropertyModelFromJson(Map<String, dynamic> json) =>
           (json['imageUrls'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList(),
+      agentFullName: json['agentFullName'] as String?,
+      agentProfileImageUrl: json['agentProfileImageUrl'] as String?,
+      agentPhoneNumber: json['agentPhoneNumber'] as String?,
     );
 
 Map<String, dynamic> _$PropertyModelToJson(PropertyModel instance) =>
@@ -31,4 +34,7 @@ Map<String, dynamic> _$PropertyModelToJson(PropertyModel instance) =>
       'address': instance.address,
       'averageRating': instance.averageRating,
       'imageUrls': instance.imageUrls,
+      'agentFullName': instance.agentFullName,
+      'agentProfileImageUrl': instance.agentProfileImageUrl,
+      'agentPhoneNumber': instance.agentPhoneNumber,
     };

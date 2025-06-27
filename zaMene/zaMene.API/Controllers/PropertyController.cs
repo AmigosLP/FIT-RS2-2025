@@ -120,5 +120,12 @@ namespace zaMene.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics()
+        {
+            var result = await _propertyService.GetPropertyStatistics();
+            return Ok(result);
+        }
     }
 }

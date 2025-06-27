@@ -6,8 +6,8 @@ import 'package:zamene_mobile/models/reviews_model.dart';
 import 'package:zamene_mobile/screens/image_gallery_screen.dart';
 import 'package:zamene_mobile/screens/payment_screen.dart';
 import 'package:zamene_mobile/services/reviews_service.dart';
-import 'package:zamene_mobile/providers/auth_provide.dart';
 import 'package:zamene_mobile/services/user_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   final Map<String, dynamic> nekretnina;
@@ -65,7 +65,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
     }
 
     try {
-      // Dohvati userID iz tokena
       final userID = await UserService().getUserIdFromToken();
 
       final review = ReviewCreateModel(
@@ -79,7 +78,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
       await service.createReview(review);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Recenzija uspješno poslata!")),
+        const SnackBar(content: Text("Recenzija uspješno poslana!")),
       );
 
       setState(() {
@@ -87,7 +86,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
         _commentController.clear();
       });
 
-      // Ponovno učitaj recenzije da prikažeš novu recenziju
       await _loadReviews();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,11 +163,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  nekretnina['cijena'] ?? '',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600),
-                ),
+                Text("${(nekretnina['cijena'] as double).toStringAsFixed(2)} BAM",
+  style: const TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 16,
+  ),
+)
+
               ],
             ),
             const SizedBox(height: 4),
@@ -185,39 +185,76 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.blueAccent),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundImage: AssetImage("assets/images/user.png"),
-                    radius: 24,
+
+            // **Prikaz vlasnika s ikonicom telefona**
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(Icons.person, size: 20, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    nekretnina['agentFullName'] ?? 'Nepoznat vlasnik',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.blue),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("Karlo Ivić",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold)),
-                      Text("Vlasnik nekretnine",
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.message_outlined),
-                    color: Colors.blue,
-                  )
-                ],
+                ),
+                IconButton(
+  icon: const Icon(Icons.phone_outlined, color: Colors.blue),
+  onPressed: () {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Kontakt telefon:"),
+            const SizedBox(height: 8),
+            Text(
+              nekretnina['agentPhoneNumber'] ?? 'N/A',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
               ),
             ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center, // CENTRIRA ACTION BUTTONS
+        actions: [
+          TextButton(
+            child: const Text("Zatvori"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.phone, color: Colors.white),
+            label: const Text(
+              "Pozovi",
+              style: TextStyle(color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white, // za siguran kontrast (iako smo ikonama labelu dali boju)
+            ),
+            onPressed: () async {
+              final Uri phoneUri = Uri(
+                scheme: 'tel',
+                path: nekretnina['agentPhoneNumber'],
+              );
+              Navigator.pop(context);
+              await launchUrl(phoneUri);
+            },
+          ),
+        ],
+      ),
+    );
+  },
+),
+
+              ],
+            ),
+
             const SizedBox(height: 20),
             const Text("Opis",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -253,7 +290,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // --- Dinamičke recenzije ---
             const Text("Recenzije",
@@ -315,7 +352,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                         "Prikaži više recenzija...",
                         style: TextStyle(color: Colors.blue, fontSize: 13),
                       ),
-                      trailing: const Icon(Icons.more_horiz, color: Colors.blue),
                       onTap: () {
                         showModalBottomSheet(
                           context: context,
@@ -405,18 +441,22 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
             ),
 
             const SizedBox(height: 12),
-            TextField(
-              controller: _commentController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Unesite komentar...',
-              ),
-            ),
+           TextField(
+  controller: _commentController,
+  maxLines: 2,   // smanjeno sa 3 na 2 da je forma niža
+  minLines: 1,   // da se ne proširuje previše
+  decoration: InputDecoration(
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16), // dodan border radius
+    ),
+    hintText: 'Unesite komentar...',
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // malo paddinga unutar polja
+  ),
+),
+
 
             const SizedBox(height: 20),
 
-            // Dugmad "Pošalji recenziju" i "Rentaj" u redu, iste veličine
             Row(
               children: [
                 Expanded(
@@ -424,10 +464,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _submitReview,
-                      icon: const Icon(Icons.rate_review),
+                      icon: const Icon(Icons.rate_review, color: Colors.white),
                       label: const Text(
                         "Pošalji recenziju",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
@@ -447,14 +490,19 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PaymentScreen(nekretnina: widget.nekretnina),
+                            builder: (_) =>
+                                PaymentScreen(nekretnina: widget.nekretnina),
                           ),
                         );
                       },
-                      icon: const Icon(Icons.shopping_cart_checkout_rounded),
+                      icon: const Icon(Icons.shopping_cart_checkout_rounded,
+                          color: Colors.white),
                       label: const Text(
                         "Rentaj",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,

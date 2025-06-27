@@ -8,7 +8,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       appBar: AppBar(
         title: Text(property.title ?? ''),
@@ -58,7 +57,8 @@ class PropertyDescriptionScreen extends StatelessWidget {
               child: Text(
                 property.title ?? '',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
             ),
 
@@ -99,7 +99,8 @@ class PropertyDescriptionScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${(property.price ?? 0).toStringAsFixed(2)} KM',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -121,22 +122,46 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
+            // Vlasnik nekretnine (agent)
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundImage: (property.agentProfileImageUrl != null &&
+                          property.agentProfileImageUrl!.isNotEmpty)
+                      ? NetworkImage(property.agentProfileImageUrl!)
+                      : const AssetImage('assets/images/user.png')
+                          as ImageProvider,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    property.agentFullName ?? 'Nepoznat vlasnik',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
             // Opis nekretnine
             const Text(
               'Opis nekretnine',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-         RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text:  property.description ?? '',
-                              
-                          ),
-                        ],
-                      ),
-                    ),
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: property.description ?? '',
+                    style: const TextStyle(color: Colors.black87, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

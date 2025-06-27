@@ -23,5 +23,7 @@ namespace zaMene.Services
         Task<bool> DeletePropertyAsync(int propertyId);
         Task<object> GetPropertyDetails(int propertyId);
         Task<object> UpdatePropertyAsync(int propertyId, UpdatePropertyRequestDto request);
+        Task<List<PropertyStatisticsDto>> GetPropertyStatistics();
+
     }
 }

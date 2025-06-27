@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
               nekretnina: {
                 'propertyID': p.propertyID,
                 'naziv': p.title,
-                'cijena': "${p.price} BAM",
+                'cijena': p.price,
                 'adresa': p.address.toString(),
                 'grad': p.city,
                 'ocjena': p.averageRating != null ? p.averageRating!.toString() : 'Nema ocjene',
@@ -276,6 +276,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     : 'assets/images/default.png',
                 'imagesUrls': p.imageUrls ?? [],
                 'description': p.description ?? '',
+                'agentFullName': p.agentFullName ?? '',
+                'agentImageUrl': p.agentProfileImageUrl ?? '',
+                'agentPhoneNumber': p.agentPhoneNumber,
               },
             ),
           ),

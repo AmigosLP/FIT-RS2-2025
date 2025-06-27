@@ -11,6 +11,9 @@ class PropertyModel {
   final String? address;
   double? averageRating;
   final List<String>? imageUrls;
+  final String? agentFullName;
+  final String? agentProfileImageUrl;
+  final String? agentPhoneNumber;
 
   PropertyModel({
     required this.propertyID,
@@ -20,7 +23,10 @@ class PropertyModel {
     this.price,
     this.address,
     this.averageRating,
-    this.imageUrls
+    this.imageUrls,
+    this.agentFullName,
+    this.agentProfileImageUrl,
+    this.agentPhoneNumber,
   });
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) => _$PropertyModelFromJson(json);
