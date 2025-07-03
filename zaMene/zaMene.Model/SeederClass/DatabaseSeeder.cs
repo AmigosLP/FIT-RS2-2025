@@ -93,14 +93,7 @@ namespace zaMene.Services.Data
                 command.CommandText = "SET IDENTITY_INSERT Users OFF";
                 await command.ExecuteNonQueryAsync();
                 await connection.CloseAsync();
-
-                var adminRole = _context.Roles.First(r => r.Name == "Admin");
-
-                _context.UserRoles.Add(new UserRole
-                {
-                    UserID = adminUser.UserID,
-                    RoleID = adminRole.RoleID
-                });
+              
                 await _context.SaveChangesAsync();
 
                 Console.WriteLine("Admin user added");
@@ -877,6 +870,11 @@ namespace zaMene.Services.Data
             {
                 var userRoles = new List<UserRole>
             {
+                new UserRole
+                {
+                    UserID = 1,
+                    RoleID = 1
+                },
                 new UserRole
                 {
                     UserID = 2,
