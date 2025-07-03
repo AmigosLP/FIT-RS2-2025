@@ -2,7 +2,6 @@
 using zaMene.Model;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using zaMene.Services;
 using zaMene.Model.SearchObjects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
@@ -10,13 +9,16 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using EasyNetQ;
+using zaMene.Model.Entity;
+using zaMene.Model.ViewModel;
+using zaMene.Services.Interface;
 
 namespace zaMene.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class UsersController : BaseCRUDController<Model.User, UserSearchObject, UserDTO, UserUpdateDto>
+    public class UsersController : BaseCRUDController<User, UserSearchObject, UserDTO, UserUpdateDto>
     {
         private readonly IUserService _userService;
         private readonly AppDbContext _context;
@@ -25,29 +27,6 @@ namespace zaMene.API.Controllers
             _userService = userService;
             _context = context;
         }
-
-        //[HttpPost("login")]
-        //[AllowAnonymous]
-        //public string Login(string username, string password)
-        //{
-        //    return (_service as IUserService).Login(username, password);
-        //}
-
-        //[AllowAnonymous]
-        //[HttpPost("Login")]
-        //public async Task<IActionResult> Login([FromBody] LoginRequest request)
-        //{
-        //    if (request == null)
-        //        return BadRequest(new { Message = "Invalid request data" });
-
-
-
-        //    var result = await _userService.Login(request.Username, request.Password);
-        //    if (string.IsNullOrEmpty(result) || result == "User not found")
-        //        return BadRequest(new { Message = "Invalid email or password" });
-
-        //    return Ok(new { Message = "Login successful", Token = result });
-        //}
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -100,13 +79,11 @@ namespace zaMene.API.Controllers
             }
             catch (Exception ex)
             {
-                // Provjeri ako je validacijska greška
                 if (ex.Message.Contains("već postoji") || ex.Message.Contains("samo slova"))
                 {
                     return BadRequest(new { Message = ex.Message });
                 }
 
-                // Ostale greške - server-side
                 return StatusCode(500, new { Message = "Došlo je do greške na serveru." });
             }
         }
@@ -122,7 +99,6 @@ namespace zaMene.API.Controllers
 
             try
             {
-                // Pretpostavimo da postoji metoda u userService koja ažurira korisnika
                 await _userService.UpdateUserProfileAsync(userId, dto);
 
                 return Ok(new { message = "Profil uspješno ažuriran." });

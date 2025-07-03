@@ -8,7 +8,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (AuthProvider.roles.contains('Admin')) {
-      return const NekretnineScreen(); // zamijeni sa AdminDashboard ako želiš
+      return const NekretnineScreen();
     } else {
       return Scaffold(
         appBar: AppBar(title: const Text("Pristup odbijen")),

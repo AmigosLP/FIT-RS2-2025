@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using zaMene.Model;
 using zaMene.Model.SearchObjects;
-using zaMene.Services;
+using zaMene.Services.Interface;
 
 namespace zaMene.API.Controllers
 {

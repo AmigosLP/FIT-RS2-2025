@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using zaMene.Model;
+using zaMene.Model.Entity;
 
 namespace zaMene.Model
 {
@@ -17,6 +17,9 @@ namespace zaMene.Model
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<PropertyImage> PropertyImages { get; set; }
+        public DbSet<City> City { get; set; }
+        public DbSet<Category> Category { get; set; }
+        public DbSet<Notification> Notification { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,54 +40,46 @@ namespace zaMene.Model
                 b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
             });
 
-            // Unique constraint za email korisnika
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
-            // Relacija Property -> User (Agent)
             modelBuilder.Entity<Property>()
                 .HasOne(p => p.Agent)
                 .WithMany()
                 .HasForeignKey(p => p.AgentID)
-                .OnDelete(DeleteBehavior.Restrict); // 🛠 Sprečava kaskadno brisanje
+                .OnDelete(DeleteBehavior.Restrict);   
 
-            // Relacija Reservation -> User (korisnik koji rezerviše)
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reservations)
                 .HasForeignKey(r => r.UserID)
-                .OnDelete(DeleteBehavior.Restrict); // 🛠 Sprečava kaskadno brisanje
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // Relacija Reservation -> Property (nekretnina koja se rezerviše)
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.Property)
                 .WithMany(p => p.Reservations)
                 .HasForeignKey(r => r.PropertyID)
-                .OnDelete(DeleteBehavior.Restrict); // 🛠 Sprečava kaskadno brisanje
+                .OnDelete(DeleteBehavior.Restrict);    
 
-            // Relacija Review -> User (ko je ostavio recenziju)
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reviews)
                 .HasForeignKey(r => r.UserID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Relacija Review -> Property (koji je stan ocijenjen)
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Property)
                 .WithMany(p => p.Reviews)
                 .HasForeignKey(r => r.PropertyID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Relacija Payment -> Reservation
             modelBuilder.Entity<Payment>()
                 .HasOne(p => p.Reservation)
                 .WithMany()
                 .HasForeignKey(p => p.ReservationID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Osiguraj da su decimal polja pravilno definisana
             modelBuilder.Entity<Property>()
                 .Property(p => p.Price)
                 .HasPrecision(18, 2);

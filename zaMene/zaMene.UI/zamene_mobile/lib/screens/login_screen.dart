@@ -15,8 +15,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
+  bool _passwordVisible = false;
 
-  Future<void> _login() async {
+  Future<void> login() async {
     final username = _usernameController.text;
     final password = _passwordController.text;
 
@@ -27,11 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final user = await UserService().login(username, password);
 
-      AuthProvider.username = user['username']; 
+      AuthProvider.username = user['username'];
       AuthProvider.password = password;
-
       AuthProvider.displayName = "${user['firstName']} ${user['lastName']}";
-
 
       Navigator.pushReplacement(
         context,
@@ -58,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _goToRegister() {
+  void goToRegister() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RegisterScreen()),
@@ -72,39 +71,55 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 30),
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: "Korisničko ime",
-                  prefixIcon: Icon(Icons.person),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  "assets/images/zaMeneLogo2.png",
+                  height: 120,
                 ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Lozinka",
-                  prefixIcon: Icon(Icons.lock),
+                const SizedBox(height: 30),
+                TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: "Korisničko ime",
+                    prefixIcon: Icon(Icons.person),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30),
-              _loading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _login,
-                      child: const Text("Prijavi se"),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: !_passwordVisible,
+                  decoration: InputDecoration(
+                    labelText: "Lozinka",
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _passwordVisible = !_passwordVisible;
+                        });
+                      },
                     ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: _goToRegister,
-                child: const Text("Nemate račun? Registruj se"),
-              ),
-            ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                _loading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: login,
+                        child: const Text("Prijavi se"),
+                      ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: goToRegister,
+                  child: const Text("Nemate račun? Registruj se"),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:zamene_mobile/models/reservation_paypal_model.dart';
+import 'package:zamene_mobile/providers/notification_provider.dart';
 import 'package:zamene_mobile/screens/success_screen.dart';
 import 'package:zamene_mobile/screens/cancel_screen.dart';
 
@@ -97,7 +99,7 @@ class _PaypalPaymentScreenState extends State<PaypalPaymentScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Greška pri pokretanju PayPal plaćanja")),
       );
-      Navigator.of(context).pop(); // Vraćaj se nazad ako dođe do greške
+      Navigator.of(context).pop();
     }
   }
 
@@ -111,7 +113,6 @@ class _PaypalPaymentScreenState extends State<PaypalPaymentScreen> {
   }
 }
 
-// OVDJE IDE NOVI EKRAN KOJI PRIKAZUJE WEBVIEW
 
 class PaypalWebViewScreen extends StatelessWidget {
   final String approvalUrl;
@@ -133,15 +134,17 @@ class PaypalWebViewScreen extends StatelessWidget {
             final url = request.url;
 
             if (url.startsWith('https://your-success-url.com')) {
-              Future.delayed(const Duration(milliseconds: 300), () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => SuccessScreen(reservationData: reservationData),
-                  ),
-                );
-              });
-              return NavigationDecision.prevent;
-            }
+  Future.delayed(const Duration(milliseconds: 300), () {
+    Provider.of<NotificationProvider>(context, listen: false).fetchUnreadCount();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => SuccessScreen(reservationData: reservationData),
+      ),
+    );
+  });
+  return NavigationDecision.prevent;
+}
+
 
             if (url.startsWith('https://your-cancel-url.com')) {
               Future.delayed(const Duration(milliseconds: 300), () {

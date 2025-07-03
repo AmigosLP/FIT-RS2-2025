@@ -19,6 +19,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+	  <PackageReference Include="Microsoft.ML" Version="4.0.2" />
+	  <PackageReference Include="Microsoft.ML.Recommender" Version="0.22.2" />
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.2" />
 	  <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />

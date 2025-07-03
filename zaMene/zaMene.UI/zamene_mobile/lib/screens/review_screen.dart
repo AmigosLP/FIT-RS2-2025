@@ -90,7 +90,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                // Ovdje obradi ocjenu i komentar
                 print("Ocjena: $ocjena");
                 print("Komentar: ${_komentarController.text}");
 

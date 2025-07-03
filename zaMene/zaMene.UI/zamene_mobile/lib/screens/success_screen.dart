@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:zamene_mobile/models/reservation_paypal_model.dart';
 import 'package:zamene_mobile/providers/auth_provide.dart';
-
+import 'package:provider/provider.dart';
+import 'package:zamene_mobile/providers/notification_provider.dart';
 
 class SuccessScreen extends StatefulWidget {
   final ReservationPaymentModel reservationData;
@@ -21,48 +22,49 @@ class _SuccessScreenState extends State<SuccessScreen> {
   @override
   void initState() {
     super.initState();
-    _submitReservation();
+    submitReservation();
   }
 
-  Future<void> _submitReservation() async {
-  try {
-    final token = AuthProvider.token;
-    if (token == null || token.isEmpty) {
-      setState(() {
-        _error = "Niste prijavljeni.";
-        _isSaving = false;
-      });
-      return;
-    }
+  Future<void> submitReservation() async {
+    try {
+      final token = AuthProvider.token;
+      if (token == null || token.isEmpty) {
+        setState(() {
+          _error = "Niste prijavljeni.";
+          _isSaving = false;
+        });
+        return;
+      }
 
-    final response = await http.post(
-      Uri.parse('http://10.0.2.2:5283/api/reservation/Create-custom'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(widget.reservationData.toJson()),
-    );
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:5283/api/reservation/Create-custom'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(widget.reservationData.toJson()),
+      );
 
-    if (response.statusCode == 201) {
+      if (response.statusCode == 201) {
+        if (mounted) {
+          Provider.of<NotificationProvider>(context, listen: false).fetchUnreadCount();
+        }
+        setState(() {
+          _isSaving = false;
+        });
+      } else {
+        setState(() {
+          _error = "Greška pri spremanju rezervacije (${response.statusCode}): ${response.body}";
+          _isSaving = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        _isSaving = false;
-      });
-    } else {
-      setState(() {
-        _error =
-            "Greška pri spremanju rezervacije (${response.statusCode}): ${response.body}";
+        _error = "Greška: $e";
         _isSaving = false;
       });
     }
-  } catch (e) {
-    setState(() {
-      _error = "Greška: $e";
-      _isSaving = false;
-    });
   }
-}
-
 
   @override
   Widget build(BuildContext context) {

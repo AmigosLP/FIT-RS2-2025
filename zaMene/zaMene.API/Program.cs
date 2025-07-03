@@ -1,44 +1,47 @@
 using Microsoft.EntityFrameworkCore;
-using zaMene.Services;
 using zaMene.Model;
 using MapsterMapper;
 using zaMene.API.Filters;
-using Microsoft.AspNetCore.Authentication;
-using zaMene.API;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
-using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
+using zaMene.Services.Data;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Http.Features;
+using zaMene.Services.Interface;
+using zaMene.Services.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
-// Add Mapster configuration
+// Mapster Mapper
 builder.Services.AddSingleton<IMapper, Mapper>();
 
-// Add services to the container.
+// Services
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddScoped<IPropertyService, PropertyService>();
 builder.Services.AddTransient<IReviewService, ReviewService>();
 builder.Services.AddSingleton<RabbitMqService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddTransient<DatabaseSeeder>();
+
 builder.Services.AddHttpContextAccessor();
 builder.Configuration.AddEnvironmentVariables();
 
+// Authentication - JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -59,8 +62,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnChallenge = async context =>
             {
-                //context.Request.Headers.Accept();
-                Console.WriteLine(context.Request.Headers);
                 context.HandleResponse();
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.ContentType = "application/json";
@@ -75,15 +76,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Controllers with filters and JSON options
 builder.Services.AddControllers(x =>
 {
-   x.Filters.Add<ExceptionFilter>();
+    x.Filters.Add<ExceptionFilter>();
 })
 .AddJsonOptions(options =>
- {
-     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
- });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -97,7 +101,7 @@ builder.Services.AddSwaggerGen(options =>
         BearerFormat = "Bearer"
     };
     options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
-    var securityRequirment = new OpenApiSecurityRequirement
+    var securityRequirement = new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
@@ -108,53 +112,26 @@ builder.Services.AddSwaggerGen(options =>
                     Id=JwtBearerDefaults.AuthenticationScheme,
                 }
             },
-            []
+            new string[]{ }
         }
     };
-    options.AddSecurityRequirement(securityRequirment);
+    options.AddSecurityRequirement(securityRequirement);
 });
 
-//builder.Services.AddSwaggerGen(c =>
-//{
-//    c.AddSecurityDefinition("basicAuth", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-//    {
-//        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-//        Scheme = "basic"
-
-//    });
-
-//    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-//    {
-//        {
-//            new OpenApiSecurityScheme
-//            {
-//                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-//                {
-//                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-//                    Id = "basicAuth"
-//                }
-//            },
-//            new string[] {}
-//        }
-//    });
-//});
-
-//builder.Services.AddDbContext<zaMeneContext>();
+// DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.AddAuthentication("BasicAuthentication")
-//    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
-
+// File upload limits
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104857600;
+    options.MultipartBodyLengthLimit = 104_857_600; // 100 MB
 });
 
 var app = builder.Build();
+
 app.UseStaticFiles();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -170,10 +147,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Automatski pokretanje migracija
 using (var scope = app.Services.CreateScope())
 {
     var dataContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dataContext.Database.EnsureCreated();
     dataContext.Database.Migrate();
+
+    // Opcionalno: seedanje baze ako želiš
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedAsync(); // ili await seeder.SeedAsync() ako async
 }
+
 app.Run();

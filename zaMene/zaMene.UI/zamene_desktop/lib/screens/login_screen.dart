@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zamene_desktop/layouts/master_screen.dart';
 import 'package:zamene_desktop/models/login_model.dart';
 import 'package:zamene_desktop/providers/user_provider.dart';
-import 'package:zamene_desktop/screens/nekretnine_screen.dart';
 
-// Definicija custom exceptiona, ako nemaš već u nekom drugom fajlu:
 class NotAdminException implements Exception {
   final String message;
   NotAdminException(this.message);
@@ -30,7 +28,7 @@ class LoginPage extends StatelessWidget {
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  Image.asset("assets/images/logo.png", height: 100, width: 100),
+                  Image.asset("assets/images/zamenelogo.png", height: 80, width: 80),
                   const SizedBox(height: 30),
                   TextField(
                     controller: _usernameController,
@@ -70,14 +68,10 @@ class LoginPage extends StatelessWidget {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MasterScreen(
-                              "Nekretnine",
-                              NekretnineScreen(),
-                            ),
+                            builder: (context) => const MasterScreen(),
                           ),
                         );
                       } on NotAdminException catch (e) {
-                        // Specifična poruka za korisnike koji nisu admin
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(e.toString()),
@@ -85,7 +79,6 @@ class LoginPage extends StatelessWidget {
                           ),
                         );
                       } catch (e) {
-                        // Ostale greške (pogrešan username/password i sl.)
                         String errorMessage = e.toString();
                         if (errorMessage.startsWith("Exception:")) {
                           errorMessage = errorMessage.replaceFirst("Exception:", "").trim();

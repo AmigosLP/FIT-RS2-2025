@@ -43,7 +43,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  Future<void> _odaberiNovuSliku() async {
+  Future<void> odaberiNovuSliku() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
@@ -53,11 +53,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     }
   }
 
-  Future<void> _spremiPromjene() async {
+  Future<void> spremiPromjene() async {
     try {
       final userId = await userService.getUserIdFromToken();
 
-      // Pripremi samo promijenjene vrijednosti
       final String? novoIme =
           _imeController.text != trenutniIme ? _imeController.text : null;
       final String? novoPrezime =
@@ -111,7 +110,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           child: Column(
             children: [
               GestureDetector(
-                onTap: _odaberiNovuSliku,
+                onTap: odaberiNovuSliku,
                 child: CircleAvatar(
                   radius: 50,
                   backgroundImage: novaSlika != null
@@ -139,7 +138,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _spremiPromjene,
+                onPressed: spremiPromjene,
                 child: const Text("Spremi"),
               ),
             ],

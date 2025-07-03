@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:zamene_mobile/models/my_reservations_model.dart';
 import 'package:zamene_mobile/models/reservation_model.dart';
 import 'package:zamene_mobile/providers/auth_provide.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,23 @@ class ReservationService {
       "Content-Type": "application/json",
       "Authorization": "Bearer ${AuthProvider.token}",
     };
+  }
+
+   static Future<List<MyReservations>> getMyReservations() async {
+    final response = await http.get(
+      Uri.parse('${baseUrl}api/Reservation/my-reservations'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${AuthProvider.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      return jsonList.map((json) => MyReservations.fromJson(json)).toList();
+    } else {
+      throw Exception('Greška pri dohvaćanju rezervacija: ${response.body}');
+    }
   }
 
   Future<List<ReservationModel>> getActiveReservations(int propertyId) async {
