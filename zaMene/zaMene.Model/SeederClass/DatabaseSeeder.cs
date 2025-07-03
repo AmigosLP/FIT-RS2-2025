@@ -677,6 +677,7 @@ namespace zaMene.Services.Data
                 var notifications = new List<Notification>() {
                      new Notification
                     {
+                        Id = 1,
                         Title = "Dobrodošli!",
                         Message = $"Pozdrav Amila, dobrodošli u aplikaciju!",
                         UserId = 3,
@@ -687,6 +688,7 @@ namespace zaMene.Services.Data
 
                     new Notification
                     {
+                        Id= 2,
                         Title = "Novi update",
                         Message = "Dodane su nove funkcionalnosti, provjerite ih!",
                         UserId = 8,
@@ -697,6 +699,7 @@ namespace zaMene.Services.Data
 
                     new Notification
                     {
+                        Id = 3,
                         Title = "Bukiranje uspješno",
                         Message = $"Uspješno ste izvršili bukiranje od {DateTime.Now.AddDays(-7):dd.MM.yyyy} do {DateTime.Now.AddDays(-3):dd.MM.yyyy}.",
                         UserId = 9,
@@ -708,6 +711,7 @@ namespace zaMene.Services.Data
 
                    new Notification
                     {
+                        Id= 4,
                         Title = "Plaćanje potvrđeno",
                         Message = $"Vaše plaćanje za rezervaciju od {DateTime.Now.AddDays(-7):dd.MM.yyyy} do {DateTime.Now.AddDays(-3):dd.MM.yyyy} je uspješno izvršeno dana {DateTime.Now.AddDays(-6):dd.MM.yyyy}.",
                         UserId = 2,
@@ -719,6 +723,7 @@ namespace zaMene.Services.Data
 
                     new Notification
                     {
+                        Id= 5,
                         Title = "Novi update",
                         Message = "Dodane su nove funkcionalnosti, provjerite ih!",
                         UserId = 8,
@@ -729,6 +734,7 @@ namespace zaMene.Services.Data
 
                      new Notification
                     {
+                        Id= 6,
                         Title = "Novi update",
                         Message = "Od naredne sedmice popusti na sve stanove iz Tuzle, provjerite ih!",
                         UserId = 12,
@@ -739,6 +745,7 @@ namespace zaMene.Services.Data
 
                       new Notification
                     {
+                        Id=7,
                         Title = "Novo Upozorenje",
                         Message = "Od ponedjeljka cemo smanjit stanove u reonu Banjaluke!",
                         UserId = 14,
