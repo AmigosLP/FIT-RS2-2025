@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using zaMene.API.Controllers;
 using zaMene.Model.SearchObjects;
-using zaMene.Model;
-using zaMene.Services;
 using RabbitMQ.Client;
+using zaMene.Model.Entity;
+using zaMene.Model.ViewModel;
+using zaMene.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, ReviewDto, ReviewUpdateDto>
 {
     private readonly IReviewService _reviewService;
@@ -15,6 +18,7 @@ public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, R
         _reviewService = reviewService;
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("Create")]
     public async Task<IActionResult> CreateReview([FromBody] ReviewCreateDto request)
     {
@@ -29,6 +33,7 @@ public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, R
         }
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpGet("ByProperty/{propertyId}")]
     public async Task<IActionResult> GetReviewsByProperty(int propertyId)
     {
@@ -36,6 +41,7 @@ public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, R
         return Ok(result);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpGet("GetAll")]
     public async Task<IActionResult> GetAll()
     {
@@ -43,6 +49,7 @@ public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, R
         return Ok(result);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPut("Update/{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] ReviewUpdateDto dto)
     {
@@ -57,6 +64,7 @@ public class ReviewController : BaseCRUDController<Review, ReviewSearchObject, R
         }
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpDelete("Delete/{id}")]
     public async Task<IActionResult> Delete(int id)
     {

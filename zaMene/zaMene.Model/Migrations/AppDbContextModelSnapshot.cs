@@ -73,6 +73,85 @@ namespace zaMene.Model.Migrations
                     b.ToTable("IdentityUserToken<int>");
                 });
 
+            modelBuilder.Entity("zaMene.Model.Category", b =>
+                {
+                    b.Property<int>("CategoryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("CategoryID");
+
+                    b.ToTable("Category");
+                });
+
+            modelBuilder.Entity("zaMene.Model.City", b =>
+                {
+                    b.Property<int>("CityID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CityID"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("CityID");
+
+                    b.ToTable("City");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RelatedReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReminderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notification");
+                });
+
             modelBuilder.Entity("zaMene.Model.Payment", b =>
                 {
                     b.Property<int>("PaymentID")
@@ -125,9 +204,15 @@ namespace zaMene.Model.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("CategoryID")
+                        .HasColumnType("int");
+
                     b.Property<string>("City")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CityID")
+                        .HasColumnType("int");
 
                     b.Property<string>("Country")
                         .IsRequired()
@@ -164,6 +249,10 @@ namespace zaMene.Model.Migrations
                     b.HasKey("PropertyID");
 
                     b.HasIndex("AgentID");
+
+                    b.HasIndex("CategoryID");
+
+                    b.HasIndex("CityID");
 
                     b.ToTable("Properties");
                 });
@@ -366,6 +455,14 @@ namespace zaMene.Model.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("zaMene.Model.Category", null)
+                        .WithMany("Properties")
+                        .HasForeignKey("CategoryID");
+
+                    b.HasOne("zaMene.Model.City", null)
+                        .WithMany("Properties")
+                        .HasForeignKey("CityID");
+
                     b.Navigation("Agent");
                 });
 
@@ -435,6 +532,16 @@ namespace zaMene.Model.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Category", b =>
+                {
+                    b.Navigation("Properties");
+                });
+
+            modelBuilder.Entity("zaMene.Model.City", b =>
+                {
+                    b.Navigation("Properties");
                 });
 
             modelBuilder.Entity("zaMene.Model.Property", b =>

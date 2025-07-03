@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:zamene_desktop/layouts/master_screen.dart';
 import 'package:zamene_desktop/models/property_statistics_model.dart';
 import 'package:zamene_desktop/providers/property_statistics_provider.dart';
 
@@ -8,10 +7,10 @@ class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
   @override
-  _StatisticsScreen createState() => _StatisticsScreen();
+  _StatisticsScreenState createState() => _StatisticsScreenState();
 }
 
-class _StatisticsScreen extends State<StatisticsScreen> {
+class _StatisticsScreenState extends State<StatisticsScreen> {
   final PropertyStatisticsService _service = PropertyStatisticsService();
   List<PropertyStatisticsModel> stats = [];
   bool isLoading = true;
@@ -31,51 +30,62 @@ class _StatisticsScreen extends State<StatisticsScreen> {
       });
     } catch (e) {
       print("Greška: $e");
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MasterScreen(
-      "Statistika",
-      isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Opće informacije",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      _buildInfoCard(Icons.monetization_on, "Najskuplji stan", _najskupljiStan()),
-                      _buildInfoCard(Icons.star, "Top ponuda", _topPonude()),
-                      _buildInfoCard(Icons.hotel, "Najviše rezervacija", _najviseRezervacija()),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Broj stanova po gradu",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildChart("Broj stanova po gradu", _brojStanovaPoGradu()),
-                  const SizedBox(height: 30),
-                  const Text(
-                    "Prosječna ocjena po gradu",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildChart("Prosječna ocjena po gradu", _prosjekOcjenaPoGradu()),
-                ],
-              ),
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              "Administracija statistike",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
+          ),
+
+          const Text(
+            "Dashboard i statistika stanova",
+            style: TextStyle(fontSize: 18),
+          ),
+
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _buildInfoCard(Icons.monetization_on, "Najskuplji stan", najskupljiStan()),
+              _buildInfoCard(Icons.star, "Top ponuda", topPonude()),
+              _buildInfoCard(Icons.hotel, "Najviše rezervacija", najviseRezervacija()),
+            ],
+          ),
+          const SizedBox(height: 30),
+          const Text(
+            "Broj stanova po gradu",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          _buildChart("Broj stanova po gradu", brojStanovaPoGradu()),
+          const SizedBox(height: 30),
+          const Text(
+            "Prosječna ocjena po gradu",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          _buildChart("Prosječna ocjena po gradu", prosjekOcjenaPoGradu()),
+        ],
+      ),
     );
   }
 
@@ -130,7 +140,7 @@ class _StatisticsScreen extends State<StatisticsScreen> {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                interval: 3, // Prikazuj oznaku na svakom broju
+                interval: 3,
                 getTitlesWidget: (value, meta) {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
@@ -172,7 +182,7 @@ class _StatisticsScreen extends State<StatisticsScreen> {
     );
   }
 
-  Map<String, double> _brojStanovaPoGradu() {
+  Map<String, double> brojStanovaPoGradu() {
     Map<String, int> counts = {};
     for (var s in stats) {
       counts[s.city] = (counts[s.city] ?? 0) + 1;
@@ -180,22 +190,24 @@ class _StatisticsScreen extends State<StatisticsScreen> {
     return counts.map((k, v) => MapEntry(k, v.toDouble()));
   }
 
-  String _najskupljiStan() {
+  String najskupljiStan() {
+    if (stats.isEmpty) return "Nema podataka";
     final najskuplji = stats.reduce((a, b) => a.viewCount > b.viewCount ? a : b);
     return "${najskuplji.title} (${najskuplji.viewCount} pregleda)";
   }
 
-  String _najviseRezervacija() {
+  String najviseRezervacija() {
+    if (stats.isEmpty) return "Nema podataka";
     final najvise = stats.reduce((a, b) => a.totalReservation > b.totalReservation ? a : b);
     return "${najvise.title} (${najvise.totalReservation} rezervacija)";
   }
 
-  String _topPonude() {
+  String topPonude() {
     final top = stats.where((s) => s.isTopProperty).map((e) => e.title).toList();
     return top.isEmpty ? "Nema top ponuda" : top.join(", ");
   }
 
-  Map<String, double> _prosjekOcjenaPoGradu() {
+  Map<String, double> prosjekOcjenaPoGradu() {
     Map<String, List<double>> gradOcjene = {};
     for (var s in stats) {
       gradOcjene.putIfAbsent(s.city, () => []).add(s.averageRating);

@@ -47,10 +47,10 @@ services:
         hostname: zamene
         restart: unless-stopped
         ports:
-          - 5283:5283  
+          - 5672:5672  
           - 15692:15692
         expose:
-          - 5283
+          - 5672
           - 8080
         environment:
           - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER} 
@@ -58,7 +58,7 @@ services:
         depends_on:
           - zamene-api
         networks:
-          - zamene-api
+          - zamenenet
         volumes:
           - ./docker_data/rabbitmq_data:/var/lib/rabbitmq
           - ./docker_data/rabbitmq_logs:/var/log/rabbitmq
@@ -75,9 +75,9 @@ services:
         image: registration-email-consumer:latest
         build: 
             context: .
-            dockerfile: RegistrationEmailServiceDockerFile
+            dockerfile: RegistrationEmailConsumerDockerFile
         environment:
-          - RabbitMQ_Host=erekreacija-rabbitmq
+          - RabbitMQ_Host=zamene-rabitmq
           - RabbitMQ_Username=${RABBITMQ_USER} 
           - RabbitMQ_Password=${RABBITMQ_PASSWORD} 
           - RabbitMQ_Virtualhost=/
@@ -90,8 +90,7 @@ services:
         # volumes:
         #     - ./appsettings.json:/app/appsettings.json
         depends_on:
-              zamene-rabbitmq:
+               zamene-rabitmq:
                 condition: service_healthy
         networks:
-           - zameneanet
-  
+           - zamenenet

@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using zaMene.Model;
+using zaMene.Model.Exceptions;
 
 namespace zaMene.API.Filters
 {

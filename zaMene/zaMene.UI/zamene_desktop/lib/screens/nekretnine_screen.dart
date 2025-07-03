@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:zamene_desktop/models/property_create_model.dart';
+import 'package:zamene_desktop/providers/edit_property_form.dart';
 
 class NekretnineScreen extends StatefulWidget {
   const NekretnineScreen({Key? key}) : super(key: key);
@@ -224,7 +225,9 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
                                           ponuda['opis'] ?? ''),
                                     ],
                                   ),
-                                  const SizedBox(height: 20),
+
+                                  Expanded(child: Container()),
+
                                   Wrap(
                                     spacing: 16,
                                     alignment: WrapAlignment.center,
@@ -239,9 +242,19 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
                                             borderRadius: BorderRadius.circular(8),
                                           ),
                                         ),
-                                        onPressed: () {
-                                          print(
-                                              "Kliknuto Uredi na nekretnini ID: ${ponuda['id']}");
+                                        onPressed: () async {
+                                          await showDialog(
+                                            context: context,
+                                            builder: (context) => Dialog(
+                                              child: UrediNekretninuForma(
+                                                nekretnina: ponuda,
+                                                onUpdated: () {
+                                                  Navigator.pop(context);
+                                                  ucitajNekretnine();
+                                                },
+                                              ),
+                                            ),
+                                          );
                                         },
                                       ),
                                       ElevatedButton.icon(
@@ -338,12 +351,12 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   final kvadraturaController = TextEditingController();
   List<File> _slike = [];
 
-  Future<void> _odaberiSlike() async {
+  Future<void> odaberiSlike() async {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
     if (pickedFiles != null) {
       setState(() {
-        _slike = pickedFiles.map((e) => File(e.path)).toList();
+        _slike.addAll(pickedFiles.map((e) => File(e.path)).toList());
       });
     }
   }
@@ -372,7 +385,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       address: adresaController.text,
       city: gradController.text,
       country: drzavaController.text,
-      agentId: 1, // Promijeni ako imaš dinamički agentId
+      agentId: 1,
       roomCount: int.parse(spavaceSobeController.text),
       area: double.parse(kvadraturaController.text),
       images: _slike,
@@ -502,26 +515,61 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.photo_library),
                   label: const Text("Odaberi slike"),
-                  onPressed: _odaberiSlike,
+                  onPressed: odaberiSlike,
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  height: 100,
-                  child: ListView.builder(
+                  height: 110,
+                  child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    itemCount: _slike.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Image.file(_slike[index], width: 100, fit: BoxFit.cover),
-                      );
-                    },
+                    child: Row(
+                      children: _slike.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        File slika = entry.value;
+
+                        return Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  slika,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _slike.removeAt(index);
+                                  });
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      color: Colors.white, size: 20),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 ElevatedButton(
+                  child: const Text("Dodaj nekretninu"),
                   onPressed: _posaljiNaBackend,
-                  child: const Text("Spremi nekretninu"),
                 ),
               ],
             ),

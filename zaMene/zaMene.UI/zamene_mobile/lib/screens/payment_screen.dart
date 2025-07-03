@@ -25,20 +25,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _loadReservations();
+    loadReservations();
   }
 
-  Future<void> _loadReservations() async {
+  Future<void> loadReservations() async {
     try {
       final service = ReservationService();
-      zauzetiTermini = await service.getActiveReservations(widget.nekretnina['propertyID']);
+      final propertyIdDynamic = widget.nekretnina['propertyID'];
+      int propertyId = 0;
+      if (propertyIdDynamic is int) {
+        propertyId = propertyIdDynamic;
+      } else if (propertyIdDynamic is String) {
+        propertyId = int.tryParse(propertyIdDynamic) ?? 0;
+      }
+      zauzetiTermini = await service.getActiveReservations(propertyId);
     } catch (e) {
       print("Greška pri dohvaćanju rezervacija: $e");
     }
     setState(() => isLoading = false);
   }
 
-  Future<void> _selectDate({required bool isCheckIn}) async {
+  Future<void> selectDate({required bool isCheckIn}) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().add(const Duration(days: 1)),
@@ -78,7 +85,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return false;
   }
 
-  bool _isOdabraniPeriodValidan() {
+  bool isOdabraniPeriodValidan() {
     if (checkInDate == null || checkOutDate == null) return false;
     if (!checkOutDate!.isAfter(checkInDate!)) return false;
 
@@ -91,24 +98,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return true;
   }
 
-  double _calculateTotalPrice() {
+  double calculateTotalPrice() {
     if (checkInDate == null || checkOutDate == null) return 0.0;
     if (!checkOutDate!.isAfter(checkInDate!)) return 0.0;
 
     final brojNoci = checkOutDate!.difference(checkInDate!).inDays;
-    final cijenaPoNoci = widget.nekretnina['cijena'] as double;
+
+    double cijenaPoNoci = 0.0;
+    final dynamic cijena = widget.nekretnina['price'];
+    if (cijena is double) {
+      cijenaPoNoci = cijena;
+    } else if (cijena is int) {
+      cijenaPoNoci = cijena.toDouble();
+    } else if (cijena is String) {
+      cijenaPoNoci = double.tryParse(cijena) ?? 0.0;
+    }
 
     return brojNoci * cijenaPoNoci;
   }
 
-  Widget _buildLegend() {
+  Widget buildLegend() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Row(
             children: [
-              Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.green[300], shape: BoxShape.circle)),
+              Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                      color: Colors.green[300], shape: BoxShape.circle)),
               const SizedBox(width: 6),
               const Text("Slobodno"),
             ],
@@ -116,7 +136,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(width: 20),
           Row(
             children: [
-              Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.red[300], shape: BoxShape.circle)),
+              Container(
+                  width: 16,
+                  height: 16,
+                  decoration:
+                      BoxDecoration(color: Colors.red[300], shape: BoxShape.circle)),
               const SizedBox(width: 6),
               const Text("Zauzeto"),
             ],
@@ -126,8 +150,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  void _startPaymentProcess() {
-    final ukupno = _calculateTotalPrice();
+  void startPaymentProcess() {
+    final ukupno = calculateTotalPrice();
 
     try {
       final token = AuthProvider.token;
@@ -143,7 +167,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final userId = int.parse(userIdStr);
 
       final reservationData = ReservationPaymentModel(
-        propertyID: widget.nekretnina['propertyID'],
+        propertyID: (widget.nekretnina['propertyID'] is int)
+            ? widget.nekretnina['propertyID']
+            : int.tryParse(widget.nekretnina['propertyID'].toString()) ?? 0,
         userID: userId,
         startDate: checkInDate!,
         endDate: checkOutDate!,
@@ -155,13 +181,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
         MaterialPageRoute(
           builder: (_) => PaypalPaymentScreen(reservationData: reservationData),
         ),
-      );
+      ).then((result) {
+        if (result == true) {
+          _showTopSnackBar("Plaćanje uspješno završeno.");
+        } else if (result == false) {
+          _showTopSnackBar("Plaćanje otkazano.");
+        }
+      });
     } catch (e) {
       print("Greška pri dekodiranju tokena: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Greška pri učitavanju korisnika.")),
       );
     }
+  }
+
+  void _showTopSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
+        backgroundColor: Colors.blue,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -184,7 +229,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildNekretninaCard(nekretnina),
+                  buildNekretninaCard(nekretnina),
                   const SizedBox(height: 20),
                   const Text("Dostupnost", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -208,7 +253,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     onDaySelected: (selectedDay, _) {},
                   ),
                   const SizedBox(height: 20),
-                  _buildLegend(),
+                  buildLegend(),
                   const SizedBox(height: 20),
                   const Text("Period", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -220,7 +265,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           label: Text(checkInDate != null
                               ? "${checkInDate!.day}.${checkInDate!.month}.${checkInDate!.year}"
                               : "Check In"),
-                          onPressed: () => _selectDate(isCheckIn: true),
+                          onPressed: () => selectDate(isCheckIn: true),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -230,7 +275,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           label: Text(checkOutDate != null
                               ? "${checkOutDate!.day}.${checkOutDate!.month}.${checkOutDate!.year}"
                               : "Check Out"),
-                          onPressed: () => _selectDate(isCheckIn: false),
+                          onPressed: () => selectDate(isCheckIn: false),
                         ),
                       ),
                     ],
@@ -242,10 +287,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Ukupno: ${_calculateTotalPrice().toStringAsFixed(2)} KM",
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            "Ukupno: ${calculateTotalPrice().toStringAsFixed(2)} KM",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
-                          if (!_isOdabraniPeriodValidan())
+                          if (!isOdabraniPeriodValidan())
                             const Padding(
                               padding: EdgeInsets.only(top: 4),
                               child: Text(
@@ -263,11 +312,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       height: 48,
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _isOdabraniPeriodValidan() ? _startPaymentProcess : null,
+                        onPressed: isOdabraniPeriodValidan() ? startPaymentProcess : null,
                         icon: const Icon(Icons.payment, color: Colors.white),
-                        label: const Text("Plati", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                        label: const Text(
+                          "Plati",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isOdabraniPeriodValidan() ? Colors.blue : Colors.grey,
+                          backgroundColor:
+                              isOdabraniPeriodValidan() ? Theme.of(context).colorScheme.primary : Colors.grey,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -281,7 +338,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  Widget _buildNekretninaCard(Map nekretnina) {
+  Widget buildNekretninaCard(Map nekretnina) {
+    final title = nekretnina['title']?.toString() ?? 'Nema naslova';
+    final adresa = nekretnina['address']?.toString() ?? 'Nema adrese';
+    double cijenaPoNoci = 0.0;
+    final dynamic cijena = nekretnina['price'];
+    if (cijena is double) {
+      cijenaPoNoci = cijena;
+    } else if (cijena is int) {
+      cijenaPoNoci = cijena.toDouble();
+    } else if (cijena is String) {
+      cijenaPoNoci = double.tryParse(cijena) ?? 0.0;
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[100],
@@ -294,13 +363,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(nekretnina['naziv'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(nekretnina['adresa'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(adresa, style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
-          Text("${(nekretnina['cijena'] as double).toStringAsFixed(2)} KM", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text("${cijenaPoNoci.toStringAsFixed(2)} KM", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         ],
       ),
     );

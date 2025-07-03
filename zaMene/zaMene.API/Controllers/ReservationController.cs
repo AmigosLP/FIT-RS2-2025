@@ -2,16 +2,20 @@
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using zaMene.Model;
-using zaMene.Services;
 using zaMene.API.Controllers;
 using zaMene.Model.SearchObjects;
 using MapsterMapper;
+using zaMene.API.Helpers;
+using zaMene.Model.Entity;
+using zaMene.Model.ViewModel;
+using zaMene.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 
 namespace zaMene.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReservationController : BaseCRUDController<Reservation, ReservationSearchObject, ReservationDto, ReservationUpdateDto>
     {
         private readonly IReservationService _reservationService;
@@ -23,8 +27,7 @@ namespace zaMene.Controllers
             _mapper = mapper;
         }
 
-        // Provjeri dostupnost nekretnine na period
-        // GET api/reservation/check-availability?propertyId=1&startDate=2025-07-01&endDate=2025-07-05
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("check-availability")]
         public async Task<IActionResult> CheckAvailability(int propertyId, DateTime startDate, DateTime endDate)
         {
@@ -36,6 +39,7 @@ namespace zaMene.Controllers
             return Ok(new { propertyId, startDate, endDate, isAvailable });
         }
 
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpPost("Create-custom")]
         public async Task<IActionResult> CreateReservation([FromBody] ReservationDto reservationDto)
         {
@@ -59,7 +63,7 @@ namespace zaMene.Controllers
             return CreatedAtAction(nameof(GetReservationById), new { id = createdReservation.ReservationID }, createdReservation);
         }
 
-        // Dohvati rezervaciju po ID-u (za povratni odgovor)
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("by-id/{id}")]
         public async Task<IActionResult> GetReservationById(int id)
         {
@@ -70,12 +74,25 @@ namespace zaMene.Controllers
             return Ok(reservation);
         }
 
-        // (Opcionalno) Dohvati aktivne rezervacije za nekretninu
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("active-reservations/{propertyId}")]
         public async Task<IActionResult> GetActiveReservations(int propertyId)
         {
             var reservations = await _reservationService.GetActiveReservationsByPropertyId(propertyId);
             return Ok(reservations);
         }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("my-reservations")]
+        public async Task<IActionResult> GetMyReservations()
+        {
+            var userId = AuthHelper.GetUserIdFromClaimsPrincipal(User);
+            if (userId == null)
+                return Unauthorized("Korisnik nije autentificiran.");
+
+            var myReservations = await _reservationService.GetMyReservations(userId.Value);
+            return Ok(myReservations);
+        }
+
     }
 }

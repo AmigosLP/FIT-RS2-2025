@@ -49,4 +49,20 @@ class ReviewDesktopService {
       throw Exception('Greška pri brisanju recenzije');
     }
   }
+
+  Future<bool> updateReview(ReviewDesktopModel review) async {
+  final url = Uri.parse('${baseUrl}api/Review/Update/${review.reviewID}');
+  final body = jsonEncode({
+    'rating': review.rating,
+    'comment': review.comment,
+  });
+
+  final response = await http.put(
+    url,
+    headers: _createHeaders(),
+    body: body,
+  );
+
+  return response.statusCode >= 200 && response.statusCode < 300;
+}
 }

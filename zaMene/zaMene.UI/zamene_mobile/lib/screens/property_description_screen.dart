@@ -18,7 +18,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Galerija slika
             if (property.imageUrls != null && property.imageUrls!.isNotEmpty)
               Center(
                 child: SizedBox(
@@ -52,7 +51,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Naslov
             Center(
               child: Text(
                 property.title ?? '',
@@ -64,7 +62,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Lokacija i cijena
             Row(
               children: [
                 const Icon(Icons.location_on, color: Colors.blue),
@@ -122,7 +119,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Vlasnik nekretnine (agent)
             Row(
               children: [
                 CircleAvatar(
@@ -146,7 +142,6 @@ class PropertyDescriptionScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Opis nekretnine
             const Text(
               'Opis nekretnine',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

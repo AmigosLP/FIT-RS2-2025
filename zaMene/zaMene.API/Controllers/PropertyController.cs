@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using RabbitMQ.Client;
 using zaMene.Model;
+using zaMene.Model.Entity;
 using zaMene.Model.SearchObjects;
-using zaMene.Services;
+using zaMene.Model.ViewModel;
+using zaMene.Services.Interface;
 
 namespace zaMene.API.Controllers
 {
@@ -12,7 +12,6 @@ namespace zaMene.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-
     public class PropertyController : BaseCRUDController<Property, PropertySearchObject, PropertyDto, PropertyUpdateDto>
     {
         private readonly IPropertyService _propertyService;
@@ -31,6 +30,7 @@ namespace zaMene.API.Controllers
             return Ok(result);
         }
 
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("{id}/average-rating")]
         public async Task<IActionResult> GetAverageRating(int id)
         {
@@ -108,7 +108,8 @@ namespace zaMene.API.Controllers
 
         [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpPut("update/{propertyId}")]
-        public async Task<IActionResult> UpdatePropertyAsync(int propertyId, UpdatePropertyRequestDto request)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdatePropertyAsync(int propertyId, [FromForm] UpdatePropertyRequestDto request)
         {
             try
             {
@@ -121,11 +122,36 @@ namespace zaMene.API.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet("statistics")]
         public async Task<IActionResult> GetStatistics()
         {
             var result = await _propertyService.GetPropertyStatistics();
             return Ok(result);
+        }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("recommended")]
+        public ActionResult<List<PropertyDto>> GetRecommendedProperties(int userId)
+        {
+            var result = _propertyService.GetRecommendedProperties(userId);
+            return Ok(result);
+        }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("get-content-recommendations/{userId}")]
+        public ActionResult<List<PropertyDto>> GetContentRecommendations(int userId)
+        {
+            var result = _propertyService.GetContentBasedRecommendations(userId);
+            return Ok(result);
+        }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("homepage-recommendations/{userId}")]
+        public async Task<IActionResult> GetHomepageRecommendations(int userId)
+        {
+            var result = await _propertyService.GetHomepageRecommendations(userId);
+            return Ok(new { message = result.message, properties = result.properties });
         }
     }
 }

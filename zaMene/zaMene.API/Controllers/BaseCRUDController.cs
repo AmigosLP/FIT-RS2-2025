@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using zaMene.Model;
 using zaMene.Model.SearchObjects;
-using zaMene.Services;
+using zaMene.Services.Interface;
 
 namespace zaMene.API.Controllers
 {
@@ -14,7 +13,7 @@ namespace zaMene.API.Controllers
             _service = service;
         }
 
-        
+        [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpPost]
         public virtual TModel Insert(TInsert request)
         {

@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.yml = docker-compose.yml
 		Dockerfile = Dockerfile
-		RegistrationEmailConsumerDockerFile.txt = RegistrationEmailConsumerDockerFile.txt
+		..\..\..\rekreacija-api-main\rekreacija-api-main\eRekreacija\RegistrationEmailServiceDockerFile = ..\..\..\rekreacija-api-main\rekreacija-api-main\eRekreacija\RegistrationEmailServiceDockerFile
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zaMene.Subscriber", "zaMene.Subscriber\zaMene.Subscriber.csproj", "{F7427C17-8F67-4A9C-8693-A634B3990643}"

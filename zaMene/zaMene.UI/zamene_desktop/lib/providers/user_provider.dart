@@ -67,7 +67,6 @@ class UserProvider {
         throw NotAdminException("Aplikacija dostupna jedino za admin korisnike!");
       }
 
-      // Spremi token ako je admin
       await _secureStorage.write(key: 'token', value: token);
       AuthProvider.token = token;
 
@@ -75,7 +74,6 @@ class UserProvider {
       throw Exception("Invalid username or password.");
     }
   } catch (e) {
-    // samo rethrow, da ne wrapaš grešku u novi Exception
     rethrow;
   }
 }
