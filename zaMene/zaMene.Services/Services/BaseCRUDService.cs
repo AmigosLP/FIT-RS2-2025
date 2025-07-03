@@ -84,7 +84,7 @@ namespace zaMene.Services.Service
 
             if (request is UserUpdateDto userUpdateDto && entity is User user)
             {
-                Mapper.Map(userUpdateDto, user);
+                Mapper.Map(userUpdateDto, user );
             }
         }
     }
