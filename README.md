@@ -109,7 +109,7 @@ Kroz seed podataka, imate mogućnost pregleda raznih korisnika, neki od tih su:
 `password: DamirPass22!`
 `username: damir_bb`
 
-## Bitno je napomenuti da su ovo seed korisnici, svi koji žele isprobati aplikaciju imaju mogućnost registracije i logiranja sebe kao korisnika, i koristešenja validnih kredencijala.
+### Bitno je napomenuti da su ovo seed korisnici, svi koji žele isprobati aplikaciju imaju mogućnost registracije i logiranja sebe kao korisnika, i koristešenja validnih kredencijala.
 
 ### Prilikom logina, kredencijali koji se unose su username i password!
 
