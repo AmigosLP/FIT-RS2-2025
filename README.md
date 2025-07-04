@@ -90,6 +90,7 @@ Za desktop dio sljedeci kredencijali su dostupni
 ### Za mobilnu aplikaciju su sljedeći kredencijali
 ### Korisnici
 Kroz seed podataka, imate mogućnost pregleda raznih korisnika, neki od tih su:
+
 `ime: Amila`
 `prezime: Delić`
 `email: amila.delic@gmail.com`
