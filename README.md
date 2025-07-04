@@ -51,10 +51,10 @@ Aplikacija pruža efikasan sistem za upravljanje nekretninama. Mogućnost odabir
 ## Instalacija i konfiguracija
 
 ### Prije samog početka, moramo se uvjeriti da imamo sljedeće stvari instalirane:
-- [Docker installed and running](https://www.docker.com/)
-- [Rabbit MQ installed](https://www.rabbitmq.com/docs/install-windows#installer)
+- [Docker instalacija i pokretanje](https://www.docker.com/)
+- [Rabbit MQ instalacija](https://www.rabbitmq.com/docs/install-windows#installer)
 - Flutter
-- An Android Emulator like Android Studio
+- Android Emulator koji je u sklopu Android studija
 
 ### Prvo treba da namjestimo API okruženje, a to ćemo uraditi u sljedećim koracima.
 - Klonirati projekat sa github repozitorija
