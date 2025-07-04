@@ -61,7 +61,7 @@ class _MasterScreenState extends State<MasterScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Center(
                 child: Text(
-                  "Dobrodošli Admin",
+                  "Dobrodošli, Admin",
                   style: const TextStyle(color: Colors.white),
                 ),
               ),

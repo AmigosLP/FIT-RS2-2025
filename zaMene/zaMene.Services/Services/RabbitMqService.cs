@@ -34,10 +34,10 @@ public class RabbitMqService
             Email = userEmail,
             Subject = "Uspješno ste registrovani na zaMene stanove." +
             "Hvala na povjerenju!" +
-            "Ova aplikacaja vam omogućava pretragu, pregled i rezervaciju stanova po cijelom BiH. Imate gradove kao što su Tuzla, Sarajevo, Mostar i drugi." +
-            "Ako imate bilo kakvih pitanja ili trebate pomoc, slobodno nas kontaktirajte." +
+            " Ova aplikacaja vam omogućava pretragu, pregled i rezervaciju stanova po cijelom BiH. Imate gradove kao što su Tuzla, Sarajevo, Mostar i drugi." +
+            " Ako imate bilo kakvih pitanja ili trebate pomoc, slobodno nas kontaktirajte." +
             "Pronađite najeftinije i najbolje apartmane po Vašoj želji!" +
-            "Srdačno, #zaMene tim",
+            " Srdačno, #zaMene tim.",
             Message = "Uspješno ste registrovani na zaMene stanove. Dobro dosli!"
         };
 

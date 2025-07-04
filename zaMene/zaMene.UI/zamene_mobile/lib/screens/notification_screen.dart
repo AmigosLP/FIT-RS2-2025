@@ -15,7 +15,9 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  late Future<List<NotificationModel>> _notificationsFuture;
+  List<NotificationModel> _notifications = [];
+  bool _loading = true;
+  String? _error;
 
   int? _extractUserIdFromToken() {
     final token = AuthProvider.token;
@@ -29,24 +31,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return int.tryParse(userIdString.toString());
   }
 
-  Future<List<NotificationModel>> _loadNotifications() async {
-    final userId = _extractUserIdFromToken();
-    if (userId == null) throw Exception("Korisnik nije autentificiran");
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
-    final notifications = await NotificationService().getNotifications();
+    try {
+      final userId = _extractUserIdFromToken();
+      if (userId == null) throw Exception("Korisnik nije autentificiran");
 
-    final userNotifications = notifications.where((n) => n.userId == userId).toList();
+      final notifications = await NotificationService().getNotifications();
 
-    final unreadCount = userNotifications.where((n) => n.isRead == false).length;
-    Provider.of<NotificationProvider>(context, listen: false).setUnreadCount(unreadCount);
+      final userNotifications = notifications.where((n) => n.userId == userId).toList();
 
-    return userNotifications;
+      final unreadCount = userNotifications.where((n) => n.isRead == false).length;
+      Provider.of<NotificationProvider>(context, listen: false).setUnreadCount(unreadCount);
+
+      setState(() {
+        _notifications = userNotifications;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    _notificationsFuture = _loadNotifications();
+    _loadNotifications();
   }
 
   Future<void> markAsRead(int id) async {
@@ -55,7 +74,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Provider.of<NotificationProvider>(context, listen: false).decrementUnreadCount();
 
       setState(() {
-        _notificationsFuture = _loadNotifications();
+        // ukloni notifikaciju iz liste
+        _notifications.removeWhere((n) => n.id == id);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,42 +90,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Notifikacije")),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Notifikacije")),
+        body: Center(child: Text("Greška: $_error")),
+      );
+    }
+
+    if (_notifications.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: Text("Notifikacije")),
+        body: Center(child: Text("Nemate notifikacija.")),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Notifikacije"),
       ),
-      body: FutureBuilder<List<NotificationModel>>(
-        future: _notificationsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Greška: ${snapshot.error}"));
-          }
-          final notifications = snapshot.data ?? [];
-          if (notifications.isEmpty) {
-            return const Center(child: Text("Nemate notifikacija."));
-          }
-          return ListView.builder(
-            itemCount: notifications.length,
-            itemBuilder: (context, index) {
-              final n = notifications[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  title: Text(n.title ?? '', style: TextStyle(fontWeight: (n.isRead ?? false) ? FontWeight.normal : FontWeight.bold)),
-                  subtitle: Text(n.message ?? ''),
-                  trailing: (n.isRead ?? false)
-                      ? const Icon(Icons.done, color: Colors.green)
-                      : IconButton(
-                          icon: const Icon(Icons.mark_email_read, color: Colors.blue),
-                          tooltip: 'Označi kao pročitano',
-                          onPressed: () async => markAsRead(n.notificationID!),
-                        ),
-                ),
-              );
-            },
+      body: ListView.builder(
+        itemCount: _notifications.length,
+        itemBuilder: (context, index) {
+          final n = _notifications[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: ListTile(
+              title: Text(n.title ?? '',
+                  style: TextStyle(fontWeight: (n.isRead ?? false) ? FontWeight.normal : FontWeight.bold)),
+              subtitle: Text(n.message ?? ''),
+              trailing: (n.isRead ?? false)
+                  ? const Icon(Icons.done, color: Colors.green)
+                  : IconButton(
+                      icon: const Icon(Icons.mark_email_read, color: Colors.blue),
+                      tooltip: 'Označi kao pročitano',
+                      onPressed: n.id == null ? null : () async => await markAsRead(n.id!),
+                    ),
+            ),
           );
         },
       ),

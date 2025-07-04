@@ -20,7 +20,7 @@ class NotificationService {
     final headers = createHeaders();
 
     final response = await http.get(
-      Uri.parse('$baseUrl/all'),  // Pretpostavljam da se sve notifikacije dobiju na /api/notification
+      Uri.parse('$baseUrl/all'),
       headers: headers,
     );
 
@@ -32,16 +32,22 @@ class NotificationService {
     }
   }
 
-  Future<bool> markAsRead(int id) async {
+Future<bool> markAsRead(int id) async {
+    final url = Uri.parse('$baseUrl/mark-as-read/$id');
     final headers = createHeaders();
 
     final response = await http.post(
-      Uri.parse('$baseUrl/mark-as-read/$id'),
+      url,
       headers: headers,
     );
-  print("Pozivam mark-as-read s ID: $id");
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else if (response.statusCode == 401) {
+      throw Exception('Niste autorizirani');
+    } else {
+      throw Exception('Greška pri označavanju kao pročitano (${response.statusCode}): ${response.body}');
+    }
   }
 
   Future<int> getUnreadNotificationCount(int userId) async {
