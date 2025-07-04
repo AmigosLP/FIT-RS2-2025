@@ -107,7 +107,7 @@ Kroz seed podataka, imate mogućnost pregleda raznih korisnika, neki od tih su:
 `prezime: Begić`
 `email: damir.begic@gmail.com`
 `password: DamirPass22!`
-`username: damir_bb`
+`username: damir_b`
 
 ### Bitno je napomenuti da su ovo seed korisnici, svi koji žele isprobati aplikaciju imaju mogućnost registracije i logiranja sebe kao korisnika, i koristešenja validnih kredencijala.
 
