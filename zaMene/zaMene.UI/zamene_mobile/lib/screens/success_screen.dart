@@ -5,6 +5,7 @@ import 'package:zamene_mobile/models/reservation_paypal_model.dart';
 import 'package:zamene_mobile/providers/auth_provide.dart';
 import 'package:provider/provider.dart';
 import 'package:zamene_mobile/providers/notification_provider.dart';
+import 'package:zamene_mobile/screens/home_screen.dart';
 
 class SuccessScreen extends StatefulWidget {
   final ReservationPaymentModel reservationData;
@@ -99,9 +100,12 @@ class _SuccessScreenState extends State<SuccessScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => HomeScreen()),
+                    (route) => false,
+                  );
                 },
-                child: const Text("Nazad na početnu"),
+                child: const Text("Povratak na početnu stranicu"),
               ),
             ],
           ),

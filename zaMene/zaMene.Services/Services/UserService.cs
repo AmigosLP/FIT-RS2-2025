@@ -167,7 +167,7 @@ namespace zaMene.Services.Service
 
             if (!string.IsNullOrWhiteSpace(dto.Username))
             {
-                if(user.Username != dto.Username)
+                if (user.Username != dto.Username)
                 {
                     bool usernameExists = await _context.Users.AnyAsync(u => u.Username == dto.Username && u.UserID != userId);
                     if (usernameExists)
@@ -175,7 +175,6 @@ namespace zaMene.Services.Service
 
                     user.Username = dto.Username;
                 }
-
             }
 
             if (!string.IsNullOrWhiteSpace(dto.FirstName))
@@ -186,6 +185,23 @@ namespace zaMene.Services.Service
             if (!string.IsNullOrWhiteSpace(dto.LastName))
             {
                 user.LastName = dto.LastName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                if (user.Email != dto.Email)
+                {
+                    bool emailExists = await _context.Users.AnyAsync(u => u.Email == dto.Email && u.UserID != userId);
+                    if (emailExists)
+                        throw new Exception("Email je već zauzet.");
+
+                    user.Email = dto.Email;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
             }
 
             if (dto.ProfileImagePath != null)

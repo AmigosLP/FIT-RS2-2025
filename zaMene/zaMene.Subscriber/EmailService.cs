@@ -19,7 +19,7 @@ namespace EmailConsumer
             var emailMessage = new MimeMessage();
 
             var fromEmail = Environment.GetEnvironmentVariable("Email");
-            emailMessage.From.Add(new MailboxAddress("Rekreacija Registration Email", fromEmail));
+            emailMessage.From.Add(new MailboxAddress("ZaMene Registration Email", fromEmail));
             emailMessage.To.Add(new MailboxAddress("Customer", userEmail));
             emailMessage.Subject = subject;
             emailMessage.Body = new TextPart("plain")

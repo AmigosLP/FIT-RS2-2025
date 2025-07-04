@@ -3,8 +3,7 @@ part 'notification_model.g.dart';
 
 @JsonSerializable()
 class NotificationModel {
-   @JsonKey(name: "NotificationID")
-  final int? notificationID;
+  final int? id;
   final int? userId;
   final String? title;
   final String? message;
@@ -15,7 +14,7 @@ class NotificationModel {
   final DateTime? createdAt;
 
   NotificationModel({
-    required this.notificationID,
+    required this.id,
     required this.userId,
     required this.title,
     required this.message,

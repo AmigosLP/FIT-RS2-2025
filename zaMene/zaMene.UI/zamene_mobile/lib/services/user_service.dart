@@ -11,7 +11,6 @@ class UserService {
   static const String _baseUrl = "http://10.0.2.2:5283/";
   final _storage = const FlutterSecureStorage();
 
-  // Login
   Future<Map<String, dynamic>> login(String username, String password) async {
     final url = Uri.parse("${_baseUrl}api/Users/login");
     final response = await http.post(
@@ -45,7 +44,6 @@ class UserService {
     }
   }
 
-  // Registracija
   Future<bool> register(UserRegisterModel user) async {
     final url = Uri.parse("${_baseUrl}api/Users/register");
     final response = await http.post(
@@ -64,7 +62,6 @@ class UserService {
     }
   }
 
-  // Dohvati userId iz tokena
   Future<int> getUserIdFromToken() async {
     if (AuthProvider.token == null) {
       final storedToken = await _storage.read(key: 'jwt');
@@ -78,7 +75,6 @@ class UserService {
     return int.parse(decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"]);
   }
 
-  // Dohvati profil korisnika
   Future<Map<String, dynamic>> getUserProfile() async {
     String? token = AuthProvider.token;
 
@@ -104,11 +100,12 @@ class UserService {
     }
   }
 
-  // Ažuriranje profila
   Future<void> updateProfile({
     String? firstName,
     String? lastName,
     String? username,
+    String? email,
+    String? password,
     File? profileImage,
     required int userId,
   }) async {
@@ -128,6 +125,9 @@ class UserService {
     request.fields['FirstName'] = firstName ?? '';
     request.fields['LastName'] = lastName ?? '';
     request.fields['Username'] = username ?? '';
+    request.fields['Email'] = email ?? '';
+    request.fields['Password'] = password ?? '';
+
 
     if (profileImage != null) {
       request.files.add(await http.MultipartFile.fromPath(
@@ -145,7 +145,6 @@ class UserService {
     }
   }
 
-  // Headers za pozive
   Map<String, String> createHeaders() {
     if (AuthProvider.token == null) {
       throw Exception("Korisnik nije autentificiran");

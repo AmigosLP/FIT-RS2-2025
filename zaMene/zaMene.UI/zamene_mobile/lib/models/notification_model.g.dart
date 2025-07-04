@@ -8,7 +8,7 @@ part of 'notification_model.dart';
 
 NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
     NotificationModel(
-      notificationID: (json['NotificationID'] as num?)?.toInt(),
+      id: (json['id'] as num?)?.toInt(),
       userId: (json['userId'] as num?)?.toInt(),
       title: json['title'] as String?,
       message: json['message'] as String?,
@@ -24,7 +24,7 @@ NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$NotificationModelToJson(NotificationModel instance) =>
     <String, dynamic>{
-      'NotificationID': instance.notificationID,
+      'id': instance.id,
       'userId': instance.userId,
       'title': instance.title,
       'message': instance.message,
