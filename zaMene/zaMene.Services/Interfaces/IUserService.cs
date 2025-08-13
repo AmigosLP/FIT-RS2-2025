@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using zaMene.Model.Entity;
 using zaMene.Model.ViewModel;
+using zaMene.Model.ViewModels;
 
 namespace zaMene.Services.Interface
 {
@@ -18,6 +19,8 @@ namespace zaMene.Services.Interface
         Task<bool> Register(UserDTO request);
         Task UpdateUserProfileAsync(int userId, UpdateUserProfileDto dto);
         Task<UserProfileDto> GetCurrentUserProfile(ClaimsPrincipal user);
+        Task ChangePassword(int userId, ChangePasswordDto dto);
+
     }
 }
 

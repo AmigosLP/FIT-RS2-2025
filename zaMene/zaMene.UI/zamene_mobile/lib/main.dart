@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:zamene_mobile/providers/favorite_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'providers/notification_provider.dart';
@@ -8,7 +9,8 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => NotificationProvider())
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => FavoriteProvider()..syncFromServer()),
       ],
       child: const MyApp(),
     ),

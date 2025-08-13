@@ -66,7 +66,7 @@ namespace zaMene.Services.Service
                 p.AgentID,
                 p.RoomCount,
                 p.Area,
-                imageUrls = p.Images.Select(i => "http://10.0.2.2:5283" + i.ImageUrl).ToList(),
+                imageUrls = p.Images.Select(i => i.ImageUrl).ToList(),
                 AgentFullName = $"{p.Agent.FirstName} {p.Agent.LastName}",
                 AgentPhoneNumber = p.Agent.Phone
             });
@@ -241,7 +241,7 @@ namespace zaMene.Services.Service
                 property.AgentID,
                 property.RoomCount,
                 property.Area,
-                imageUrls = property.Images.Select(i => "http://localhost:5283" + i.ImageUrl).ToList(),
+                imageUrls = property.Images.Select(i => i.ImageUrl).ToList(),
                 AgentFullName = $"{property.Agent.FirstName} {property.Agent.LastName}",
                 AgentImageUrl = property.Agent.ProfileImagePath,
                 AgentPhoneNumber = property.Agent.Phone
@@ -288,7 +288,7 @@ namespace zaMene.Services.Service
                 foreach (var image in request.NewImages)
                 {
                     var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(image.FileName)}";
-                    var uploadsFolder = Path.Combine("uploads", "properties");
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/properties");
 
                     if (!Directory.Exists(uploadsFolder))
                         Directory.CreateDirectory(uploadsFolder);
@@ -303,7 +303,7 @@ namespace zaMene.Services.Service
                     var newImage = new PropertyImage
                     {
                         PropertyID = property.PropertyID,
-                        ImageUrl = filePath
+                        ImageUrl = $"/images/properties/{fileName}"
                     };
 
                     _context.PropertyImages.Add(newImage);

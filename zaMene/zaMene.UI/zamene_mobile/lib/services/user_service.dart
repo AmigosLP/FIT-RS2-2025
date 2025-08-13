@@ -100,6 +100,42 @@ class UserService {
     }
   }
 
+  Future<void> changePassword({
+  required String currentPassword,
+  required String newPassword,
+  required String confirmNewPassword,
+}) async {
+  if (AuthProvider.token == null) {
+    final storedToken = await _storage.read(key: 'jwt');
+    if (storedToken != null) {
+      AuthProvider.setToken(storedToken);
+    } else {
+      throw Exception("Token nije pronađen");
+    }
+  }
+
+  final url = Uri.parse("${_baseUrl}api/Users/change-password");
+
+  final response = await http.put(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${AuthProvider.token}'
+    },
+    body: jsonEncode({
+      "currentPassword": currentPassword,
+      "newPassword": newPassword,
+      "confirmNewPassword": confirmNewPassword
+    }),
+  );
+
+  if (response.statusCode != 200) {
+    final body = jsonDecode(response.body);
+    throw Exception(body['message'] ?? "Greška prilikom promjene lozinke");
+  }
+}
+
+
   Future<void> updateProfile({
     String? firstName,
     String? lastName,

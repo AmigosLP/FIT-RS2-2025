@@ -87,5 +87,22 @@ namespace zaMene.Services.Service
                 Mapper.Map(userUpdateDto, user);
             }
         }
+
+        public virtual async Task<bool> Delete(int id)
+        {
+            var set = _context.Set<TDbEntity>();
+            var entity = await set.FindAsync(id);
+
+            if (entity == null)
+            {
+                throw new UserException("Not found");
+            }
+
+            set.Remove(entity);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
     }
 }

@@ -74,8 +74,8 @@ namespace zaMene.API.Controllers
         }
 
         [Authorize(AuthenticationSchemes = "Bearer")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("custom-delete/{id}")]
+        public async Task<IActionResult> DeleteProperty(int id)
         {
             try
             {

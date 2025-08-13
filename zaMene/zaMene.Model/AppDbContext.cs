@@ -20,6 +20,10 @@ namespace zaMene.Model
         public DbSet<City> City { get; set; }
         public DbSet<Category> Category { get; set; }
         public DbSet<Notification> Notification { get; set; }
+        public DbSet<Country> Country { get; set; }
+
+        public DbSet<Favorite> Favorite { get; set; }
+        public DbSet<SupportTicket> SupportTicket { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

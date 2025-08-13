@@ -25,5 +25,13 @@ namespace zaMene.API.Controllers
         {
             return _service.Update(id, request);
         }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _service.Delete(id);
+            return NoContent();
+        }
     }
 }

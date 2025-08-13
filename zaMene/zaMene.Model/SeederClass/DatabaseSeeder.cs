@@ -29,6 +29,7 @@ namespace zaMene.Services.Data
             await SeedPaymentsAsync();
             await SeedUserRolesAsync();
             await SeedReviewsAsync();
+            await SeedCountyAsync();
         }
 
         private async Task SeedRolesAsync()
@@ -788,6 +789,32 @@ namespace zaMene.Services.Data
                 _context.City.AddRange(cities);
                 await _context.SaveChangesAsync();
                 Console.WriteLine("Cities added");
+
+                command.CommandText = "SET IDENTITY_INSERT City OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
+            }
+        }
+
+        private async Task SeedCountyAsync()
+        {
+            if (!_context.Country.Any())
+            {
+                var country = new List<Country>
+                {
+                    new Country { CountryID = 1, Name = "Bosna i Hercegovina" }
+                };
+
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT City ON";
+                await command.ExecuteNonQueryAsync();
+                _context.Country.AddRange(country);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Country added");
 
                 command.CommandText = "SET IDENTITY_INSERT City OFF";
                 await command.ExecuteNonQueryAsync();

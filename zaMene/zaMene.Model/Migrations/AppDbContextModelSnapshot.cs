@@ -73,7 +73,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("IdentityUserToken<int>");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Category", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Category", b =>
                 {
                     b.Property<int>("CategoryID")
                         .ValueGeneratedOnAdd()
@@ -91,7 +91,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Category");
                 });
 
-            modelBuilder.Entity("zaMene.Model.City", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.City", b =>
                 {
                     b.Property<int>("CityID")
                         .ValueGeneratedOnAdd()
@@ -109,7 +109,51 @@ namespace zaMene.Model.Migrations
                     b.ToTable("City");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Notification", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Country", b =>
+                {
+                    b.Property<int>("CountryID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CountryID"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("CountryID");
+
+                    b.ToTable("Country");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.Favorite", b =>
+                {
+                    b.Property<int>("FavoriteID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FavoriteID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PropertyID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("FavoriteID");
+
+                    b.HasIndex("PropertyID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("Favorite");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.Notification", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -152,7 +196,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Notification");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Payment", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Payment", b =>
                 {
                     b.Property<int>("PaymentID")
                         .ValueGeneratedOnAdd()
@@ -185,7 +229,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Payments");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Property", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Property", b =>
                 {
                     b.Property<int>("PropertyID")
                         .ValueGeneratedOnAdd()
@@ -217,6 +261,9 @@ namespace zaMene.Model.Migrations
                     b.Property<string>("Country")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CountryID")
+                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -254,10 +301,12 @@ namespace zaMene.Model.Migrations
 
                     b.HasIndex("CityID");
 
+                    b.HasIndex("CountryID");
+
                     b.ToTable("Properties");
                 });
 
-            modelBuilder.Entity("zaMene.Model.PropertyImage", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.PropertyImage", b =>
                 {
                     b.Property<int>("PropertyImageID")
                         .ValueGeneratedOnAdd()
@@ -279,7 +328,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("PropertyImages");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Reservation", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Reservation", b =>
                 {
                     b.Property<int>("ReservationID")
                         .ValueGeneratedOnAdd()
@@ -318,7 +367,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Reservations");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Review", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Review", b =>
                 {
                     b.Property<int>("ReviewID")
                         .ValueGeneratedOnAdd()
@@ -351,7 +400,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Reviews");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Role", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Role", b =>
                 {
                     b.Property<int>("RoleID")
                         .ValueGeneratedOnAdd()
@@ -369,7 +418,45 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("zaMene.Model.User", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.SupportTicket", b =>
+                {
+                    b.Property<int>("SupportTicketID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SupportTicketID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Response")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("SupportTicketID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("SupportTicket");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.User", b =>
                 {
                     b.Property<int>("UserID")
                         .ValueGeneratedOnAdd()
@@ -421,7 +508,7 @@ namespace zaMene.Model.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("zaMene.Model.UserRole", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.UserRole", b =>
                 {
                     b.Property<int>("UserID")
                         .HasColumnType("int");
@@ -436,9 +523,28 @@ namespace zaMene.Model.Migrations
                     b.ToTable("UserRoles");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Payment", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Favorite", b =>
                 {
-                    b.HasOne("zaMene.Model.Reservation", "Reservation")
+                    b.HasOne("zaMene.Model.Entity.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("zaMene.Model.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.Payment", b =>
+                {
+                    b.HasOne("zaMene.Model.Entity.Reservation", "Reservation")
                         .WithMany()
                         .HasForeignKey("ReservationID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -447,28 +553,32 @@ namespace zaMene.Model.Migrations
                     b.Navigation("Reservation");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Property", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Property", b =>
                 {
-                    b.HasOne("zaMene.Model.User", "Agent")
+                    b.HasOne("zaMene.Model.Entity.User", "Agent")
                         .WithMany()
                         .HasForeignKey("AgentID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("zaMene.Model.Category", null)
+                    b.HasOne("zaMene.Model.Entity.Category", null)
                         .WithMany("Properties")
                         .HasForeignKey("CategoryID");
 
-                    b.HasOne("zaMene.Model.City", null)
+                    b.HasOne("zaMene.Model.Entity.City", null)
                         .WithMany("Properties")
                         .HasForeignKey("CityID");
+
+                    b.HasOne("zaMene.Model.Entity.Country", null)
+                        .WithMany("Properties")
+                        .HasForeignKey("CountryID");
 
                     b.Navigation("Agent");
                 });
 
-            modelBuilder.Entity("zaMene.Model.PropertyImage", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.PropertyImage", b =>
                 {
-                    b.HasOne("zaMene.Model.Property", "Property")
+                    b.HasOne("zaMene.Model.Entity.Property", "Property")
                         .WithMany("Images")
                         .HasForeignKey("PropertyID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -477,15 +587,15 @@ namespace zaMene.Model.Migrations
                     b.Navigation("Property");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Reservation", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Reservation", b =>
                 {
-                    b.HasOne("zaMene.Model.Property", "Property")
+                    b.HasOne("zaMene.Model.Entity.Property", "Property")
                         .WithMany("Reservations")
                         .HasForeignKey("PropertyID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("zaMene.Model.User", "User")
+                    b.HasOne("zaMene.Model.Entity.User", "User")
                         .WithMany("Reservations")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -496,15 +606,15 @@ namespace zaMene.Model.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Review", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Review", b =>
                 {
-                    b.HasOne("zaMene.Model.Property", "Property")
+                    b.HasOne("zaMene.Model.Entity.Property", "Property")
                         .WithMany("Reviews")
                         .HasForeignKey("PropertyID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("zaMene.Model.User", "User")
+                    b.HasOne("zaMene.Model.Entity.User", "User")
                         .WithMany("Reviews")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -515,15 +625,26 @@ namespace zaMene.Model.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("zaMene.Model.UserRole", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.SupportTicket", b =>
                 {
-                    b.HasOne("zaMene.Model.Role", "Role")
+                    b.HasOne("zaMene.Model.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.UserRole", b =>
+                {
+                    b.HasOne("zaMene.Model.Entity.Role", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("zaMene.Model.User", "User")
+                    b.HasOne("zaMene.Model.Entity.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -534,17 +655,22 @@ namespace zaMene.Model.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Category", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Category", b =>
                 {
                     b.Navigation("Properties");
                 });
 
-            modelBuilder.Entity("zaMene.Model.City", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.City", b =>
                 {
                     b.Navigation("Properties");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Property", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Country", b =>
+                {
+                    b.Navigation("Properties");
+                });
+
+            modelBuilder.Entity("zaMene.Model.Entity.Property", b =>
                 {
                     b.Navigation("Images");
 
@@ -553,12 +679,12 @@ namespace zaMene.Model.Migrations
                     b.Navigation("Reviews");
                 });
 
-            modelBuilder.Entity("zaMene.Model.Role", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.Role", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("zaMene.Model.User", b =>
+            modelBuilder.Entity("zaMene.Model.Entity.User", b =>
                 {
                     b.Navigation("Reservations");
 

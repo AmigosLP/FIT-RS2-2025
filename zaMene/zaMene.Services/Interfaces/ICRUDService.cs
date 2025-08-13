@@ -11,5 +11,7 @@ namespace zaMene.Services.Interface
     {
         TModel Insert(TInsert request);
         TModel Update(int id, TUpdate request);
+
+        Task<bool> Delete(int id);
     }
 }

@@ -12,6 +12,7 @@ using EasyNetQ;
 using zaMene.Model.Entity;
 using zaMene.Model.ViewModel;
 using zaMene.Services.Interface;
+using zaMene.Model.ViewModels;
 
 namespace zaMene.API.Controllers
 {
@@ -127,5 +128,28 @@ namespace zaMene.API.Controllers
                 return NotFound();
             }
         }
+
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpPut("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userIdStr == null)
+                return Unauthorized();
+
+            var userId = int.Parse(userIdStr);
+
+            try
+            {
+                await _userService.ChangePassword(userId, dto);
+                return Ok("Lozinka uspješno promijenjena.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
     }
 }
