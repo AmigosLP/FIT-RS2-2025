@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:zamene_desktop/models/city_desktop_model.dart';
+import 'package:zamene_desktop/models/country_desktop_model.dart';
 import 'package:zamene_desktop/models/property_create_model.dart';
-import 'package:zamene_desktop/providers/edit_property_form.dart';
+import 'package:zamene_desktop/providers/city_provider.dart';
+import 'package:zamene_desktop/forms/edit_property_form.dart';
+import 'package:zamene_desktop/providers/country_provider.dart';
 
 class NekretnineScreen extends StatefulWidget {
   const NekretnineScreen({Key? key}) : super(key: key);
@@ -78,7 +82,7 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
   }
 
   Future<void> obrisiNekretninu(int id) async {
-    final uri = Uri.parse('http://localhost:5283/api/Property/$id');
+    final uri = Uri.parse('http://localhost:5283/api/Property/custom-delete/$id');
     final headers = await getAuthHeader();
 
     final response = await http.delete(uri, headers: headers);
@@ -101,9 +105,19 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
     }
   }
 
-  String fixImageUrl(String url) {
-    return url.replaceAll('10.0.2.2', 'localhost');
+  String getBaseImageUrl() {
+  if (Platform.isAndroid) {
+    return "http://10.0.2.2:5283";
+  } else {
+    return "http://localhost:5283"; // Za desktop i druge platforme
   }
+}
+
+String fixImageUrl(String url) {
+  if (url.startsWith('http')) return url;
+  return getBaseImageUrl() + url;
+}
+
 
   Widget _ikonicaSaTekstom(IconData ikon, String tekst) {
     return Row(
@@ -332,8 +346,7 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
 
 class DodajNekretninuForma extends StatefulWidget {
   final VoidCallback onSubmitted;
-  const DodajNekretninuForma({Key? key, required this.onSubmitted})
-      : super(key: key);
+  const DodajNekretninuForma({Key? key, required this.onSubmitted}) : super(key: key);
 
   @override
   State<DodajNekretninuForma> createState() => _DodajNekretninuFormaState();
@@ -350,6 +363,53 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   final drzavaController = TextEditingController();
   final kvadraturaController = TextEditingController();
   List<File> _slike = [];
+
+  final CityService cityService = CityService();
+  List<CityDesktopModel> gradovi = [];
+  CityDesktopModel? odabraniGrad;
+  bool ucitavanjeGradova = true;
+
+  final CountryService countryService = CountryService();
+  List<CountryDesktopModel> drzave = [];
+  CountryDesktopModel? odabranaDrzava;
+  bool ucitavanjeDrzava = true;
+
+  @override
+  void initState() {
+    super.initState();
+    ucitajGradove();
+    ucitajDrzave();
+  }
+
+  Future<void> ucitajGradove() async {
+    try {
+      final result = await cityService.fetchGradove();
+      setState(() {
+        gradovi = result;
+        ucitavanjeGradova = false;
+      });
+    } catch (e) {
+      print("Greška prilikom učitavanja gradova: $e");
+      setState(() {
+        ucitavanjeGradova = false;
+      });
+    }
+  }
+
+   Future<void> ucitajDrzave() async {
+    try {
+      final result = await countryService.fetchCountries();
+      setState(() {
+        drzave = result;
+        ucitavanjeDrzava = false;
+      });
+    } catch (e) {
+      print("Greška prilikom učitavanja država: $e");
+      setState(() {
+        ucitavanjeDrzava = false;
+      });
+    }
+  }
 
   Future<void> odaberiSlike() async {
     final picker = ImagePicker();
@@ -383,8 +443,8 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       description: opisController.text,
       price: double.parse(cijenaController.text),
       address: adresaController.text,
-      city: gradController.text,
-      country: drzavaController.text,
+      city: odabraniGrad?.name ?? '',
+      country: odabranaDrzava?.name ?? '',
       agentId: 1,
       roomCount: int.parse(spavaceSobeController.text),
       area: double.parse(kvadraturaController.text),
@@ -459,15 +519,13 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite cijenu";
-                    if (double.tryParse(value) == null)
-                      return "Unesite ispravan broj";
+                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: spavaceSobeController,
-                  decoration:
-                      const InputDecoration(labelText: "Broj spavaćih soba"),
+                  decoration: const InputDecoration(labelText: "Broj spavaćih soba"),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite broj soba";
@@ -481,23 +539,58 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) return "Unesite kvadraturu";
-                    if (double.tryParse(value) == null)
-                      return "Unesite ispravan broj";
+                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
                     return null;
                   },
                 ),
-                TextFormField(
-                  controller: gradController,
-                  decoration: const InputDecoration(labelText: "Grad"),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? "Unesite grad" : null,
-                ),
-                TextFormField(
-                  controller: drzavaController,
-                  decoration: const InputDecoration(labelText: "Država"),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? "Unesite državu" : null,
-                ),
+
+                // Grad dropdown
+                ucitavanjeGradova
+                    ? const CircularProgressIndicator()
+                    : DropdownButtonFormField<CityDesktopModel>(
+                        decoration: const InputDecoration(labelText: "Grad"),
+                        value: odabraniGrad,
+                        items: gradovi.map((city) {
+                          return DropdownMenuItem<CityDesktopModel>(
+                            value: city,
+                            child: Text(
+                              city.name,
+                              style: const TextStyle(fontWeight: FontWeight.normal)
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (CityDesktopModel? newValue) {
+                          setState(() {
+                            odabraniGrad = newValue;
+                          });
+                        },
+                        validator: (value) => value == null ? "Odaberite grad" : null,
+                      ),
+
+                  ucitavanjeDrzava
+      ? const CircularProgressIndicator()
+      : DropdownButtonFormField<CountryDesktopModel>(
+          decoration: const InputDecoration(labelText: "Država"),
+          value: odabranaDrzava,
+          items: drzave.map((drzava) {
+            return DropdownMenuItem<CountryDesktopModel>(
+              value: drzava,
+              child: Text(
+                drzava.name,
+                style: const TextStyle(fontWeight: FontWeight.normal),
+              ),
+            );
+          }).toList(),
+          onChanged: (CountryDesktopModel? newValue) {
+            setState(() {
+              odabranaDrzava = newValue;
+            });
+          },
+          validator: (value) => value == null ? "Odaberite državu" : null,
+        ),
+
+
+
                 TextFormField(
                   controller: adresaController,
                   decoration: const InputDecoration(labelText: "Adresa"),
@@ -551,7 +644,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                                   });
                                 },
                                 child: Container(
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.black54,
                                     shape: BoxShape.circle,
                                   ),

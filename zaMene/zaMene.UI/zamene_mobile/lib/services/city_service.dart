@@ -16,19 +16,21 @@ class CityService {
     };
   }
 
-  Future<List<City>> getCities() async {
-    final headers = createHeaders();
+ Future<List<City>> getCities() async {
+  final headers = createHeaders();
 
-    final response = await http.get(
-      Uri.parse(baseUrl),
-      headers: headers,
-    );
+  final response = await http.get(
+    Uri.parse(baseUrl),
+    headers: headers,
+  );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => City.fromJson(json)).toList();
-    } else {
-      throw Exception('Greška pri dohvaćanju gradova: ${response.body}');
-    }
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> jsonMap = json.decode(response.body);
+    final List<dynamic> resultList = jsonMap['resultList'];
+
+    return resultList.map((json) => City.fromJson(json)).toList();
+  } else {
+    throw Exception('Greška pri dohvaćanju gradova: ${response.body}');
   }
+}
 }

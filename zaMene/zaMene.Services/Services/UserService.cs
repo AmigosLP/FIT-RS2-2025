@@ -27,6 +27,7 @@ using System.Security.Claims;
 using zaMene.Model.Entity;
 using zaMene.Model.ViewModel;
 using zaMene.Services.Interface;
+using zaMene.Model.ViewModels;
 
 namespace zaMene.Services.Service
 {
@@ -53,7 +54,7 @@ namespace zaMene.Services.Service
         {
             query = base.AddFilter(searchObject, query);
 
-            if(!string.IsNullOrWhiteSpace(searchObject.FirstNameGTE))
+            if (!string.IsNullOrWhiteSpace(searchObject.FirstNameGTE))
             {
                 query = query.Where(x => x.FirstName.StartsWith(searchObject.FirstNameGTE));
             }
@@ -199,9 +200,18 @@ namespace zaMene.Services.Service
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.Password))
+            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
             {
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+                if (string.IsNullOrWhiteSpace(dto.OldPassword))
+                    throw new Exception("Stara lozinka je obavezna za promjenu lozinke.");
+
+                // Provjera stare lozinke
+                bool isOldPasswordCorrect = VerifyPassword(dto.OldPassword, user.PasswordHash);
+                if (!isOldPasswordCorrect)
+                    throw new Exception("Stara lozinka nije ispravna.");
+
+                // Postavljanje nove lozinke (hashirane)
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             }
 
             if (dto.ProfileImagePath != null)
@@ -276,6 +286,26 @@ namespace zaMene.Services.Service
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
 
+        public async Task ChangePassword(int userId, ChangePasswordDto model)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                throw new Exception("Korisnik nije pronađen.");
+
+            if (!BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.PasswordHash))
+                throw new Exception("Trenutna lozinka nije tačna.");
+
+            if (model.NewPassword != model.ConfirmNewPassword)
+                throw new Exception("Nova lozinka i potvrda se ne poklapaju.");
+
+            if (!IsValidPassword(model.NewPassword))
+                throw new Exception("Nova lozinka nije dovoljno jaka.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+            await _context.SaveChangesAsync();
+        }
+
+
         private string Capitalize(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -299,6 +329,15 @@ namespace zaMene.Services.Service
                 return false;
 
             return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            return password.Length >= 8 &&
+                   password.Any(char.IsUpper) &&
+                   password.Any(char.IsLower) &&
+                   password.Any(char.IsDigit) &&
+                   password.Any(c => !char.IsLetterOrDigit(c)); // poseban karakter
         }
 
     }

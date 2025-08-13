@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:zamene_mobile/models/city_model.dart';
 import 'package:zamene_mobile/models/property_model.dart';
 import 'package:zamene_mobile/models/homepage_recommendation_model.dart';
+import 'package:zamene_mobile/screens/favorite_screen.dart';
 import 'package:zamene_mobile/screens/my_reservations.dart';
 import 'package:zamene_mobile/screens/notification_screen.dart';
 import 'package:zamene_mobile/screens/property_detail_screen.dart';
@@ -13,6 +14,7 @@ import 'package:zamene_mobile/screens/user_profile_screen.dart';
 import 'package:zamene_mobile/services/user_service.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:zamene_mobile/providers/notification_provider.dart';
+import 'package:zamene_mobile/providers/favorite_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -143,8 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
     loadHomepageRecommendations();
     loadProfilnaSlika();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<NotificationProvider>(context, listen: false).fetchUnreadCount();
+
+      // === NOVO: inicijalno povuci favorite sa servera ===
+      try {
+        await Provider.of<FavoriteProvider>(context, listen: false).syncFromServer();
+      } catch (_) {}
     });
   }
 
@@ -176,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.book_online_outlined), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: ''),
         ],
         selectedItemColor: primaryColor,
@@ -217,6 +224,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Row(
                     children: [
+                      // === NOVO: prečac na Favorites screen ===
+                      IconButton(
+                        icon: const Icon(Icons.favorite),
+                        tooltip: 'Favoriti',
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                          );
+                        },
+                      ),
                       Consumer<NotificationProvider>(
                         builder: (context, notificationProvider, _) {
                           return Stack(
@@ -367,15 +385,80 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                height: 100,
-                width: double.infinity,
-                child: (p.imageUrls?.isNotEmpty ?? false)
-                    ? Image.network(p.imageUrls!.first, fit: BoxFit.cover)
-                    : Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
+            // === SLIKA + SRCE (favorites toggle) ===
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    height: 100,
+                    width: double.infinity,
+                    child: (p.imageUrls?.isNotEmpty ?? false)
+                        ? Image.network(p.imageUrls!.first, fit: BoxFit.cover)
+                        : Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
+                  ),
+                ),
+Positioned(
+  top: 6,
+  right: 6,
+  child: Consumer<FavoriteProvider>(
+    builder: (context, favProv, _) {
+      final isFav = (p.propertyID != null) && favProv.isFavorite(p.propertyID!);
+      return SizedBox(
+        width: 32,
+        height: 32,
+        child: Material(
+          color: Colors.white.withOpacity(0.9),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () async {
+              if (p.propertyID == null) return;
+              final wasFav = isFav;
+              try {
+                await favProv.toggle(p.propertyID!);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite',
+                      ),
+                      backgroundColor: wasFav ? Colors.red : Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text('Greška: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+              }
+            },
+            child: Center(
+              child: Icon(
+                isFav ? Icons.favorite : Icons.favorite_border,
+                size: 18, // smanjeno
+                color: isFav ? Colors.red : Colors.black54,
               ),
+            ),
+          ),
+        ),
+      );
+    },
+  ),
+),
+
+
+              ],
             ),
             const SizedBox(height: 12),
             Text(p.title ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),

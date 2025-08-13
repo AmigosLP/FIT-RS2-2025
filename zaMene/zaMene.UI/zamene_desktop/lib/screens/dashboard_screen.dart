@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
 import 'package:zamene_desktop/models/property_statistics_model.dart';
 import 'package:zamene_desktop/providers/property_statistics_provider.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -36,6 +41,49 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
   }
 
+ void _exportAsPDF() async {
+  final pdf = pw.Document();
+
+  // Učitaj font koji podržava č, š, ž...
+  final fontData = await rootBundle.load('assets/NotoSans-Regular.ttf');
+  final ttf = pw.Font.ttf(fontData);
+
+  final brojStanova = brojStanovaPoGradu();
+  final prosjekOcjena = prosjekOcjenaPoGradu();
+
+  pdf.addPage(
+    pw.MultiPage(
+      build: (context) => [
+        pw.Text('Izvještaj o statistici stanova', style: pw.TextStyle(font: ttf, fontSize: 22)),
+        pw.SizedBox(height: 20),
+        pw.Text('Najskuplji stan: ${najskupljiStan()}', style: pw.TextStyle(font: ttf)),
+        pw.Text('Najviše rezervacija: ${najviseRezervacija()}', style: pw.TextStyle(font: ttf)),
+        pw.Text('Top ponude: ${topPonude()}', style: pw.TextStyle(font: ttf)),
+        pw.SizedBox(height: 20),
+        pw.Text('Broj stanova po gradu:', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
+        pw.Column(
+          children: brojStanova.entries.map((e) =>
+            pw.Text('${e.key}: ${e.value.toStringAsFixed(0)}', style: pw.TextStyle(font: ttf))).toList()
+        ),
+        pw.SizedBox(height: 20),
+        pw.Text('Prosječna ocjena po gradu:', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
+        pw.Column(
+          children: prosjekOcjena.entries.map((e) =>
+            pw.Text('${e.key}: ${e.value.toStringAsFixed(2)}', style: pw.TextStyle(font: ttf))).toList()
+        ),
+      ],
+    ),
+  );
+
+  // Spremi PDF u isti folder kao app (ili koristi desktop path)
+  final file = File('izvjestaj.pdf');
+  await file.writeAsBytes(await pdf.save());
+
+  // Možeš dodat i poruku
+  print("PDF uspješno spremljen: ${file.path}");
+}
+
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -54,13 +102,24 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
-
           const Text(
             "Dashboard i statistika stanova",
             style: TextStyle(fontSize: 18),
           ),
 
           const SizedBox(height: 12),
+
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton.icon(
+              onPressed: _exportAsPDF,
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text("Exportuj izvještaj"),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
           Wrap(
             spacing: 16,
             runSpacing: 16,

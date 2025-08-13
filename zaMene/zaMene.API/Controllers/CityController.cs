@@ -1,27 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using zaMene.Model;
 using zaMene.Model.Entity;
+using zaMene.Model.SearchObjects;
+using zaMene.Model.ViewModel;
+using zaMene.Model.ViewModels;
+using zaMene.Services.Interface;
+using zaMene.Services.Interfaces;
 
-[ApiController]
-[Route("api/[controller]")]
-[Authorize(AuthenticationSchemes = "Bearer")]
-public class CityController : ControllerBase
+namespace zaMene.API.Controllers
 {
-    private readonly AppDbContext _context;
-
-    public CityController(AppDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class CityController : BaseCRUDController<City, CitySearchObject, CityDto, CityUpdateDto>
     {
-        _context = context;
-    }
+        public CityController(ICityService service) : base(service)
+        {
 
-    [HttpGet]
-    public async Task<ActionResult<List<City>>> GetCities()
-    {
-        var cities = await _context.City.ToListAsync();
-        return Ok(cities);
+        }
     }
 }

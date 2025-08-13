@@ -124,11 +124,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         children: [
           Row(
             children: [
-              Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                      color: Colors.green[300], shape: BoxShape.circle)),
+              Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.green[300], shape: BoxShape.circle)),
               const SizedBox(width: 6),
               const Text("Slobodno"),
             ],
@@ -136,11 +132,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(width: 20),
           Row(
             children: [
-              Container(
-                  width: 16,
-                  height: 16,
-                  decoration:
-                      BoxDecoration(color: Colors.red[300], shape: BoxShape.circle)),
+              Container(width: 16, height: 16, decoration: BoxDecoration(color: Colors.red[300], shape: BoxShape.circle)),
               const SizedBox(width: 6),
               const Text("Zauzeto"),
             ],
@@ -158,8 +150,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (token == null) throw Exception("Token je null");
 
       final decodedToken = JwtDecoder.decode(token);
-      print("Decoded token: $decodedToken");
-
       const userIdKey = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier';
       final userIdStr = decodedToken[userIdKey];
       if (userIdStr == null) throw Exception("Token ne sadrži userID");
@@ -226,8 +216,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 20),
                 children: [
                   buildNekretninaCard(nekretnina),
                   const SizedBox(height: 20),
@@ -305,30 +295,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-                    child: SizedBox(
-                      height: 48,
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: isOdabraniPeriodValidan() ? startPaymentProcess : null,
-                        icon: const Icon(Icons.payment, color: Colors.white),
-                        label: const Text(
-                          "Plati",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isOdabraniPeriodValidan() ? Theme.of(context).colorScheme.primary : Colors.grey,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 48,
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isOdabraniPeriodValidan() ? startPaymentProcess : null,
+                      icon: const Icon(Icons.payment, color: Colors.white),
+                      label: const Text(
+                        "Plati",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isOdabraniPeriodValidan()
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
@@ -352,10 +334,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [

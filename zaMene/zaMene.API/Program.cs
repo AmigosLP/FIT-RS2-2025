@@ -12,6 +12,8 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Http.Features;
 using zaMene.Services.Interface;
 using zaMene.Services.Service;
+using zaMene.Services.Interfaces;
+using zaMene.Services.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,10 @@ builder.Services.AddTransient<IReviewService, ReviewService>();
 builder.Services.AddSingleton<RabbitMqService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ICityService, CityService>();
+builder.Services.AddScoped<ICountryService, CountryService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
 builder.Services.AddTransient<DatabaseSeeder>();
 
 builder.Services.AddHttpContextAccessor();
