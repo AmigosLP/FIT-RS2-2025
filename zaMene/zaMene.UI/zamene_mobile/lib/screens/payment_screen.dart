@@ -59,8 +59,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SnackBar(content: Text("Odabrani datum je zauzet. Odaberite drugi.")),
         );
         setState(() {
-          if (isCheckIn) checkInDate = null;
-          else checkOutDate = null;
+          if (isCheckIn) {
+            checkInDate = null;
+          } else {
+            checkOutDate = null;
+          }
         });
         return;
       }

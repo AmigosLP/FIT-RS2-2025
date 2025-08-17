@@ -674,7 +674,7 @@ namespace zaMene.Services.Data
                         Id = 1,
                         Title = "Dobrodošli!",
                         Message = $"Pozdrav Amila, dobrodošli u aplikaciju!",
-                        UserId = 3,
+                        UserID = 3,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "ReservationCreated"
@@ -685,7 +685,7 @@ namespace zaMene.Services.Data
                         Id= 2,
                         Title = "Novi update",
                         Message = "Dodane su nove funkcionalnosti, provjerite ih!",
-                        UserId = 8,
+                        UserID = 8,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "Information"
@@ -696,7 +696,7 @@ namespace zaMene.Services.Data
                         Id = 3,
                         Title = "Bukiranje uspješno",
                         Message = $"Uspješno ste izvršili bukiranje od {DateTime.Now.AddDays(-7):dd.MM.yyyy} do {DateTime.Now.AddDays(-3):dd.MM.yyyy}.",
-                        UserId = 9,
+                        UserID = 9,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "Information"
@@ -708,7 +708,7 @@ namespace zaMene.Services.Data
                         Id= 4,
                         Title = "Plaćanje potvrđeno",
                         Message = $"Vaše plaćanje za rezervaciju od {DateTime.Now.AddDays(-7):dd.MM.yyyy} do {DateTime.Now.AddDays(-3):dd.MM.yyyy} je uspješno izvršeno dana {DateTime.Now.AddDays(-6):dd.MM.yyyy}.",
-                        UserId = 2,
+                        UserID = 2,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "PaymentSuccess"
@@ -720,7 +720,7 @@ namespace zaMene.Services.Data
                         Id= 5,
                         Title = "Novi update",
                         Message = "Dodane su nove funkcionalnosti, provjerite ih!",
-                        UserId = 8,
+                        UserID = 8,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "Information"
@@ -731,7 +731,7 @@ namespace zaMene.Services.Data
                         Id= 6,
                         Title = "Novi update",
                         Message = "Od naredne sedmice popusti na sve stanove iz Tuzle, provjerite ih!",
-                        UserId = 12,
+                        UserID = 12,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "Information"
@@ -742,7 +742,7 @@ namespace zaMene.Services.Data
                         Id=7,
                         Title = "Novo Upozorenje",
                         Message = "Od ponedjeljka cemo smanjit stanove u reonu Banjaluke!",
-                        UserId = 14,
+                        UserID = 14,
                         CreatedAt = DateTime.UtcNow,
                         IsRead = false,
                         Type = "Warning"
@@ -810,13 +810,13 @@ namespace zaMene.Services.Data
                 await connection.OpenAsync();
                 var command = connection.CreateCommand();
 
-                command.CommandText = "SET IDENTITY_INSERT City ON";
+                command.CommandText = "SET IDENTITY_INSERT Country ON";
                 await command.ExecuteNonQueryAsync();
                 _context.Country.AddRange(country);
                 await _context.SaveChangesAsync();
                 Console.WriteLine("Country added");
 
-                command.CommandText = "SET IDENTITY_INSERT City OFF";
+                command.CommandText = "SET IDENTITY_INSERT Country OFF";
                 await command.ExecuteNonQueryAsync();
                 await connection.CloseAsync();
             }

@@ -1,18 +1,23 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:zamene_mobile/models/property_model.dart';
 import 'package:zamene_mobile/models/reviews_create_model.dart';
 import 'package:zamene_mobile/models/reviews_model.dart';
 import 'package:zamene_mobile/screens/image_gallery_screen.dart';
 import 'package:zamene_mobile/screens/payment_screen.dart';
 import 'package:zamene_mobile/services/reviews_service.dart';
 import 'package:zamene_mobile/services/user_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
-  final Map<String, dynamic> nekretnina;
+  final PropertyModel property;
 
-  const PropertyDetailScreen({super.key, required this.nekretnina});
+  const PropertyDetailScreen({
+    super.key,
+    required this.property,
+  });
 
   @override
   State<PropertyDetailScreen> createState() => _PropertyDetailScreenState();
@@ -36,23 +41,26 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
   }
 
   String getFullImageUrl(String path) {
-    if (path.startsWith('http')) {
-      return path;
-    }
-    return backendBaseUrl + path;
+    if (path.startsWith('http')) return path;
+    final normalized = path.replaceAll(r'\', '/');
+    return normalized.startsWith('/') ? (backendBaseUrl + normalized) : ('$backendBaseUrl/$normalized');
   }
 
   Future<void> _loadReviews() async {
     setState(() => isLoadingReviews = true);
     try {
       final service = ReviewService();
-      final fetchedReviews =
-          await service.getReviewsByPropertyId(widget.nekretnina['propertyID']);
-      setState(() {
-        reviews = fetchedReviews;
-        isLoadingReviews = false;
-      });
-    } catch (e) {
+      final id = widget.property.propertyID;
+      if (id != null) {
+        final fetchedReviews = await service.getReviewsByPropertyId(id);
+        setState(() {
+          reviews = fetchedReviews;
+          isLoadingReviews = false;
+        });
+      } else {
+        setState(() => isLoadingReviews = false);
+      }
+    } catch (_) {
       setState(() => isLoadingReviews = false);
     }
   }
@@ -74,10 +82,17 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
 
     try {
       final userID = await UserService().getUserIdFromToken();
+      final propertyID = widget.property.propertyID;
+      if (propertyID == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Nedostaje ID nekretnine.")),
+        );
+        return;
+      }
 
       final review = ReviewCreateModel(
         userID: userID,
-        propertyID: widget.nekretnina['propertyID'],
+        propertyID: propertyID,
         rating: userRating.toInt(),
         comment: _commentController.text.trim(),
       );
@@ -104,9 +119,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final nekretnina = widget.nekretnina;
-    final String opis = nekretnina['description'] ?? 'Nema opisa...';
+    final p = widget.property;
+    final String opis = p.description ?? 'Nema opisa...';
     final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final List<String> images = (p.imageUrls ?? [])
+        .where((u) => (u != null && u.toString().trim().isNotEmpty))
+        .map((u) => getFullImageUrl(u))
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -131,52 +151,60 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
               borderRadius: BorderRadius.circular(16),
               child: GestureDetector(
                 onTap: () {
-                  List<String> slike = [];
-                  if (widget.nekretnina.containsKey('imageUrls')) {
-                    slike = List<String>.from(widget.nekretnina['imageUrls'])
-                        .map((path) => getFullImageUrl(path))
-                        .toList();
-                  }
+                  if (images.isEmpty) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          ImageGalleryScreen(images: slike, initialIndex: 0),
+                      builder: (_) => ImageGalleryScreen(
+                        images: images,
+                        initialIndex: 0,
+                      ),
                     ),
                   );
                 },
-                child: CachedNetworkImage(
-                  imageUrl: (widget.nekretnina.containsKey('imageUrls') &&
-                          widget.nekretnina['imageUrls'].isNotEmpty)
-                      ? getFullImageUrl(widget.nekretnina['imageUrls'][0])
-                      : '',
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 200,
-                    color: Colors.grey[300],
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.error),
-                ),
+                child: images.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: images.first,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Center(child: CircularProgressIndicator()),
+                        ),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                      )
+                    : Image.asset(
+                        'assets/images/zaMeneLogo2.png',
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
+
             const SizedBox(height: 16),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  nekretnina['title'] ?? '',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                Expanded(
+                  child: Text(
+                    p.title ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 12),
                 Text(
-                  "${(nekretnina['price'] != null ? (nekretnina['price'] as num).toDouble().toStringAsFixed(2) : '0.00')} BAM",
+                  "${(p.price ?? 0).toStringAsFixed(2)} BAM",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -185,20 +213,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 )
               ],
             ),
+
             const SizedBox(height: 4),
+
             Row(
               children: [
                 const Icon(Icons.location_on, size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    nekretnina['city'] ?? 'Nepoznat grad',
+                    p.city ?? 'Nepoznat grad',
                     style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -206,7 +238,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    nekretnina['agentFullName'] ?? 'Nepoznat vlasnik',
+                    p.agentFullName ?? 'Nepoznat vlasnik',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -217,6 +249,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 IconButton(
                   icon: Icon(Icons.phone_outlined, color: primaryColor),
                   onPressed: () {
+                    final phone = p.agentPhoneNumber;
                     showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
@@ -226,7 +259,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                             const Text("Kontakt telefon:"),
                             const SizedBox(height: 8),
                             Text(
-                              nekretnina['agentPhoneNumber'] ?? 'N/A',
+                              phone ?? 'N/A',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -251,14 +284,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
                             ),
-                            onPressed: () async {
-                              final Uri phoneUri = Uri(
-                                scheme: 'tel',
-                                path: nekretnina['agentPhoneNumber'],
-                              );
-                              Navigator.pop(context);
-                              await launchUrl(phoneUri);
-                            },
+                            onPressed: phone == null || phone.isEmpty
+                                ? null
+                                : () async {
+                                    final Uri phoneUri = Uri(
+                                      scheme: 'tel',
+                                      path: phone,
+                                    );
+                                    Navigator.pop(context);
+                                    await launchUrl(phoneUri);
+                                  },
                           ),
                         ],
                       ),
@@ -267,13 +302,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
-            Text("Opis",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor)),
+
+            Text(
+              "Opis",
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+            ),
             const SizedBox(height: 6),
+
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -291,11 +329,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                   ),
                   if (opis.length > 100)
                     TextButton(
-                      onPressed: () {
-                        setState(() {
-                          showFullDescription = !showFullDescription;
-                        });
-                      },
+                      onPressed: () =>
+                          setState(() => showFullDescription = !showFullDescription),
                       child: Text(
                         showFullDescription ? "Sakrij" : "Prikaži više",
                         style: TextStyle(color: primaryColor),
@@ -304,13 +339,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                 ],
               ),
             ),
+
             const SizedBox(height: 10),
-            Text("Recenzije",
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor)),
+
+            Text(
+              "Recenzije",
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+            ),
             const SizedBox(height: 12),
+
             if (isLoadingReviews)
               const Center(child: CircularProgressIndicator())
             else if (reviews.isEmpty)
@@ -328,15 +366,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundImage: review.userProfileImageUrl != null
-                              ? NetworkImage(getFullImageUrl(review.userProfileImageUrl!))
+                              ? NetworkImage(getFullImageUrl(
+                                  review.userProfileImageUrl!))
                               : const AssetImage("assets/images/user.png")
                                   as ImageProvider,
                         ),
                         title: Text(
                           review.userFullName,
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor),
+                              fontWeight: FontWeight.bold, color: primaryColor),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,8 +392,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                             Text(review.comment),
                             Text(
                               "${review.reviewDate.day.toString().padLeft(2, '0')}.${review.reviewDate.month.toString().padLeft(2, '0')}.${review.reviewDate.year}",
-                              style:
-                                  const TextStyle(fontSize: 10, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -393,14 +431,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                                       final review = reviews[index];
                                       return ListTile(
                                         leading: CircleAvatar(
-                                          backgroundImage: review.userProfileImageUrl !=
-                                                  null
-                                              ? NetworkImage(
-                                                  getFullImageUrl(
-                                                      review.userProfileImageUrl!))
-                                              : const AssetImage(
-                                                      "assets/images/user.png")
-                                                  as ImageProvider,
+                                          backgroundImage:
+                                              review.userProfileImageUrl != null
+                                                  ? NetworkImage(getFullImageUrl(
+                                                      review
+                                                          .userProfileImageUrl!))
+                                                  : const AssetImage(
+                                                          "assets/images/user.png")
+                                                      as ImageProvider,
                                         ),
                                         title: Text(
                                           review.userFullName,
@@ -415,9 +453,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                                             const SizedBox(height: 4),
                                             RatingBarIndicator(
                                               rating: review.rating.toDouble(),
-                                              itemBuilder: (context, _) => const Icon(
-                                                  Icons.star,
-                                                  color: Colors.amber),
+                                              itemBuilder: (context, _) =>
+                                                  const Icon(Icons.star,
+                                                      color: Colors.amber),
                                               itemCount: 5,
                                               itemSize: 16,
                                               direction: Axis.horizontal,
@@ -444,13 +482,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     ),
                 ],
               ),
+
             const SizedBox(height: 10),
-            Text("Ostavi svoju recenziju",
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor)),
+
+            Text(
+              "Ostavi svoju recenziju",
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: primaryColor),
+            ),
             const SizedBox(height: 10),
+
             RatingBar.builder(
               initialRating: userRating,
               minRating: 1,
@@ -461,12 +502,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
               itemBuilder: (context, _) =>
                   const Icon(Icons.star, color: Colors.amber),
               onRatingUpdate: (rating) {
-                setState(() {
-                  userRating = rating;
-                });
+                setState(() => userRating = rating);
               },
             ),
+
             const SizedBox(height: 12),
+
             TextField(
               controller: _commentController,
               maxLines: 2,
@@ -480,7 +521,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               ),
             ),
+
             const SizedBox(height: 20),
+
             Row(
               children: [
                 Expanded(
@@ -488,7 +531,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _submitReview,
-                      icon: const Icon(Icons.rate_review, color: Colors.white),
+                      icon:
+                          const Icon(Icons.rate_review, color: Colors.white),
                       label: const Text(
                         "Pošalji recenziju",
                         style: TextStyle(
@@ -511,11 +555,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: () {
+                        // PaymentScreen očekuje Map? Pošalji JSON kako bi ostao kompatibilan.
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                PaymentScreen(nekretnina: widget.nekretnina),
+                            builder: (_) => PaymentScreen(
+                              nekretnina: widget.property.toJson(),
+                            ),
                           ),
                         );
                       },
@@ -533,13 +579,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen>
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 0),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
           ],
         ),

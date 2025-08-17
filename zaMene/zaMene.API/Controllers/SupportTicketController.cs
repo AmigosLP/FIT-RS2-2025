@@ -6,6 +6,7 @@ using zaMene.Model.Entity;
 using zaMene.Model.SearchObjects;
 using zaMene.Model.ViewModels;
 using zaMene.Services.Interfaces;
+using zaMene.Services.Service;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -61,6 +62,23 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
     {
         var updated = await _service.ResolveAsync(id, false);
         return Ok(updated);
+    }
+
+    [HttpPost("support-tickets/{id}/respond")]
+    [Authorize]
+    public async Task<IActionResult> Respond(int id, [FromBody] RespondToTicketRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Response))
+            return BadRequest("Response je obavezan.");
+
+        var updated = await _service.RespondAsync(id, req.Response, req.MarkResolved);
+        return Ok(new
+        {
+            updated.SupportTicketID,
+            updated.Response,
+            updated.IsResolved,
+            updated.ResolvedAt
+        });
     }
 
     public class RespondRequest

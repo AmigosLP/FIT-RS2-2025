@@ -1,18 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+
+import 'package:zamene_desktop/forms/edit_property_form.dart';
 import 'package:zamene_desktop/models/city_desktop_model.dart';
 import 'package:zamene_desktop/models/country_desktop_model.dart';
-import 'package:zamene_desktop/models/property_create_model.dart';
 import 'package:zamene_desktop/providers/city_provider.dart';
-import 'package:zamene_desktop/forms/edit_property_form.dart';
 import 'package:zamene_desktop/providers/country_provider.dart';
 
 class NekretnineScreen extends StatefulWidget {
-  const NekretnineScreen({Key? key}) : super(key: key);
+  const NekretnineScreen({super.key});
 
   @override
   State<NekretnineScreen> createState() => _NekretnineScreenState();
@@ -29,19 +30,68 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
     ucitajNekretnine();
   }
 
+  String getBaseImageUrl() {
+    if (Platform.isAndroid) {
+      return "http://10.0.2.2:5283";
+    } else {
+      return "http://localhost:5283";
+    }
+  }
+
+  String fixImageUrl(String url) {
+    if (url.startsWith('http')) return url;
+    return getBaseImageUrl() + url;
+  }
+
+  Future<Map<String, String>> getAuthHeader() async {
+    const secureStorage = FlutterSecureStorage();
+    final token = await secureStorage.read(key: "token");
+    return {"Authorization": "Bearer $token"};
+  }
+
   Future<void> ucitajNekretnine() async {
     const baseImageUrl = 'http://localhost:5283';
-    final uri = Uri.parse('$baseImageUrl/api/Property/with-images');
-    final headers = await getAuthHeader();
-    final response = await http.get(uri, headers: headers);
+    String _absUrl(String? u) {
+      if (u == null || u.isEmpty) return '';
+      final s = u.replaceAll('\\', '/');
+      if (s.startsWith('http')) return s;
+      return '$baseImageUrl${s.startsWith('/') ? '' : '/'}$s';
+    }
 
-    if (response.statusCode == 200) {
+    try {
+      final uri = Uri.parse('$baseImageUrl/api/Property/with-images');
+      final headers = await getAuthHeader();
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode != 200) {
+        print('Greška pri dohvaćanju nekretnina: ${response.statusCode}');
+        return;
+      }
+
       final List<dynamic> data = jsonDecode(response.body);
 
       setState(() {
         topPonude = data.map<Map<String, dynamic>>((item) {
-          List imageList = item['imageUrls'] ?? [];
-          final String slika = imageList.isNotEmpty ? imageList[0] : "";
+          final List raw = (item['images'] ?? item['imageUrls'] ?? []) as List;
+
+          final List<Map<String, dynamic>> normImages =
+              raw.map<Map<String, dynamic>>((e) {
+            if (e is Map) {
+              return {
+                'id': e['id'],
+                'url': _absUrl(e['url']?.toString() ?? ''),
+              };
+            } else if (e is String) {
+              return {
+                'id': null,
+                'url': _absUrl(e),
+              };
+            }
+            return {'id': null, 'url': ''};
+          }).where((m) => (m['url'] as String).isNotEmpty).toList();
+
+          final String slika =
+              normImages.isNotEmpty ? (normImages.first['url'] as String) : '';
 
           return {
             'id': item['propertyID'],
@@ -55,37 +105,40 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
             'sobe': item['roomCount'],
             'kvadratura': item['area'],
             'slika': slika,
-            'slike': imageList,
+            'slike': normImages,
           };
         }).toList();
 
         filteredPonude = List.from(topPonude);
       });
-    } else {
-      print('Greška pri dohvaćanju nekretnina: ${response.statusCode}');
+    } catch (e) {
+      // ignore: avoid_print
+      print('Greška pri dohvaćanju nekretnina: $e');
     }
   }
 
   void _filtrirajPonude(String query) {
     setState(() {
       filteredPonude = topPonude.where((ponuda) {
-        return ponuda['naziv']!.toLowerCase().contains(query.toLowerCase()) ||
-            ponuda['grad']!.toLowerCase().contains(query.toLowerCase());
+        return (ponuda['naziv'] ?? '')
+                .toString()
+                .toLowerCase()
+                .contains(query.toLowerCase()) ||
+            (ponuda['grad'] ?? '')
+                .toString()
+                .toLowerCase()
+                .contains(query.toLowerCase());
       }).toList();
     });
   }
 
-  Future<Map<String, String>> getAuthHeader() async {
-    const secureStorage = FlutterSecureStorage();
-    final token = await secureStorage.read(key: "token");
-    return {"Authorization": "Bearer $token"};
-  }
-
   Future<void> obrisiNekretninu(int id) async {
-    final uri = Uri.parse('http://localhost:5283/api/Property/custom-delete/$id');
+    final uri = Uri.parse('${getBaseImageUrl()}/api/Property/custom-delete/$id');
     final headers = await getAuthHeader();
 
     final response = await http.delete(uri, headers: headers);
+
+    if (!mounted) return;
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,20 +157,6 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
       );
     }
   }
-
-  String getBaseImageUrl() {
-  if (Platform.isAndroid) {
-    return "http://10.0.2.2:5283";
-  } else {
-    return "http://localhost:5283"; // Za desktop i druge platforme
-  }
-}
-
-String fixImageUrl(String url) {
-  if (url.startsWith('http')) return url;
-  return getBaseImageUrl() + url;
-}
-
 
   Widget _ikonicaSaTekstom(IconData ikon, String tekst) {
     return Row(
@@ -174,7 +213,8 @@ String fixImageUrl(String url) {
                       return Card(
                         elevation: 5,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: LayoutBuilder(
@@ -188,34 +228,35 @@ String fixImageUrl(String url) {
                                       height: cardConstraints.maxWidth * 0.6,
                                       width: double.infinity,
                                       color: Colors.grey[200],
-                                      child: ponuda['slika'].toString().isNotEmpty
+                                      child: (ponuda['slika'] as String).isNotEmpty
                                           ? Image.network(
-                                              fixImageUrl(ponuda['slika']),
+                                              ponuda['slika'] as String,
                                               fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) =>
-                                                      Container(
+                                              errorBuilder: (context, error,
+                                                      stackTrace) =>
+                                                  Container(
                                                 color: Colors.grey[300],
-                                                child:
-                                                    const Icon(Icons.error, size: 40),
+                                                child: const Icon(Icons.error,
+                                                    size: 40),
                                               ),
                                             )
                                           : Container(
                                               color: Colors.blue[300],
-                                              child: const Icon(Icons.image, size: 40),
+                                              child: const Icon(Icons.image,
+                                                  size: 40),
                                             ),
                                     ),
                                   ),
                                   const SizedBox(height: 12),
                                   ConstrainedBox(
                                     constraints: BoxConstraints(
-                                        maxWidth: cardConstraints.maxWidth * 0.9),
+                                        maxWidth:
+                                            cardConstraints.maxWidth * 0.9),
                                     child: Text(
                                       ponuda['naziv'] ?? '',
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18),
                                       textAlign: TextAlign.center,
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 2,
@@ -227,21 +268,20 @@ String fixImageUrl(String url) {
                                     runSpacing: 8,
                                     alignment: WrapAlignment.center,
                                     children: [
-                                      _ikonicaSaTekstom(
-                                          Icons.monetization_on,
+                                      _ikonicaSaTekstom(Icons.monetization_on,
                                           ponuda['cijena'] ?? ''),
-                                      _ikonicaSaTekstom(Icons.square_foot,
+                                      _ikonicaSaTekstom(
+                                          Icons.square_foot,
                                           '${ponuda['kvadratura'] ?? ''} m²'),
                                       _ikonicaSaTekstom(
                                           Icons.location_on,
                                           '${ponuda['grad'] ?? ''}, ${ponuda['drzava'] ?? ''}'),
-                                      _ikonicaSaTekstom(Icons.description,
+                                      _ikonicaSaTekstom(
+                                          Icons.description,
                                           ponuda['opis'] ?? ''),
                                     ],
                                   ),
-
-                                  Expanded(child: Container()),
-
+                                  const Spacer(),
                                   Wrap(
                                     spacing: 16,
                                     alignment: WrapAlignment.center,
@@ -249,13 +289,6 @@ String fixImageUrl(String url) {
                                       ElevatedButton.icon(
                                         icon: const Icon(Icons.edit),
                                         label: const Text("Uredi"),
-                                        style: ElevatedButton.styleFrom(
-                                          minimumSize: const Size(100, 36),
-                                          textStyle: const TextStyle(fontSize: 14),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
                                         onPressed: () async {
                                           await showDialog(
                                             context: context,
@@ -274,15 +307,9 @@ String fixImageUrl(String url) {
                                       ElevatedButton.icon(
                                         icon: const Icon(Icons.delete),
                                         label: const Text("Obriši"),
-                                        style: ElevatedButton.styleFrom(
-                                          minimumSize: const Size(100, 36),
-                                          textStyle: const TextStyle(fontSize: 14),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
                                         onPressed: () async {
-                                          final confirm = await showDialog<bool>(
+                                          final confirm =
+                                              await showDialog<bool>(
                                             context: context,
                                             builder: (context) => AlertDialog(
                                               title: const Text("Potvrda"),
@@ -290,21 +317,21 @@ String fixImageUrl(String url) {
                                                   "Da li ste sigurni da želite obrisati ovu nekretninu?"),
                                               actions: [
                                                 TextButton(
-                                                  child: const Text("Ne"),
-                                                  onPressed: () =>
-                                                      Navigator.pop(context, false),
-                                                ),
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            context, false),
+                                                    child: const Text("Ne")),
                                                 TextButton(
-                                                  child: const Text("Da"),
-                                                  onPressed: () =>
-                                                      Navigator.pop(context, true),
-                                                ),
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            context, true),
+                                                    child: const Text("Da")),
                                               ],
                                             ),
                                           );
                                           if (confirm == true) {
-                                            await obrisiNekretninu(ponuda['id']);
-                                            ucitajNekretnine();
+                                            await obrisiNekretninu(
+                                                ponuda['id'] as int);
                                           }
                                         },
                                       ),
@@ -346,7 +373,8 @@ String fixImageUrl(String url) {
 
 class DodajNekretninuForma extends StatefulWidget {
   final VoidCallback onSubmitted;
-  const DodajNekretninuForma({Key? key, required this.onSubmitted}) : super(key: key);
+  const DodajNekretninuForma({Key? key, required this.onSubmitted})
+      : super(key: key);
 
   @override
   State<DodajNekretninuForma> createState() => _DodajNekretninuFormaState();
@@ -357,12 +385,8 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   final nazivController = TextEditingController();
   final cijenaController = TextEditingController();
   final spavaceSobeController = TextEditingController();
-  final gradController = TextEditingController();
   final opisController = TextEditingController();
   final adresaController = TextEditingController();
-  final drzavaController = TextEditingController();
-  final kvadraturaController = TextEditingController();
-  List<File> _slike = [];
 
   final CityService cityService = CityService();
   List<CityDesktopModel> gradovi = [];
@@ -374,11 +398,30 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   CountryDesktopModel? odabranaDrzava;
   bool ucitavanjeDrzava = true;
 
+  final List<File> _slike = [];
+
+  static const int _maxImages = 8;
+
+  final ScrollController _thumbsCtrl = ScrollController();
+  static const double _tileSize = 130.0;
+  static const double _tileGap = 10.0;
+
   @override
   void initState() {
     super.initState();
     ucitajGradove();
     ucitajDrzave();
+  }
+
+  @override
+  void dispose() {
+    nazivController.dispose();
+    cijenaController.dispose();
+    spavaceSobeController.dispose();
+    opisController.dispose();
+    adresaController.dispose();
+    _thumbsCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> ucitajGradove() async {
@@ -390,13 +433,11 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       });
     } catch (e) {
       print("Greška prilikom učitavanja gradova: $e");
-      setState(() {
-        ucitavanjeGradova = false;
-      });
+      setState(() => ucitavanjeGradova = false);
     }
   }
 
-   Future<void> ucitajDrzave() async {
+  Future<void> ucitajDrzave() async {
     try {
       final result = await countryService.fetchCountries();
       setState(() {
@@ -405,19 +446,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       });
     } catch (e) {
       print("Greška prilikom učitavanja država: $e");
-      setState(() {
-        ucitavanjeDrzava = false;
-      });
-    }
-  }
-
-  Future<void> odaberiSlike() async {
-    final picker = ImagePicker();
-    final pickedFiles = await picker.pickMultiImage();
-    if (pickedFiles != null) {
-      setState(() {
-        _slike.addAll(pickedFiles.map((e) => File(e.path)).toList());
-      });
+      setState(() => ucitavanjeDrzava = false);
     }
   }
 
@@ -426,6 +455,54 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
     final token = await secureStorage.read(key: "token");
     return {"Authorization": "Bearer $token"};
   }
+
+  Future<void> odaberiSlike() async {
+    final remaining = _maxImages - _slike.length;
+    if (remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maksimalno je dozvoljeno 8 slika.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles == null || pickedFiles.isEmpty) return;
+
+    final addThese =
+        pickedFiles.take(remaining).map((e) => File(e.path)).toList();
+
+    setState(() {
+      _slike.addAll(addThese);
+    });
+
+    if (pickedFiles.length > remaining) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Dodano ${addThese.length} od ${pickedFiles.length} odabranih (maks. $_maxImages).'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (_thumbsCtrl.hasClients) {
+      _thumbsCtrl.animateTo(
+        _thumbsCtrl.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  bool _saving = false;
+
+  String _baseUrl() =>
+      Platform.isAndroid ? "http://10.0.2.2:5283" : "http://localhost:5283";
 
   Future<void> _posaljiNaBackend() async {
     if (!_formKey.currentState!.validate() || _slike.isEmpty) {
@@ -438,61 +515,134 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       return;
     }
 
-    final model = PropertyCreateModel(
-      title: nazivController.text,
-      description: opisController.text,
-      price: double.parse(cijenaController.text),
-      address: adresaController.text,
-      city: odabraniGrad?.name ?? '',
-      country: odabranaDrzava?.name ?? '',
-      agentId: 1,
-      roomCount: int.parse(spavaceSobeController.text),
-      area: double.parse(kvadraturaController.text),
-      images: _slike,
-    );
+    setState(() => _saving = true);
 
-    final uri = Uri.parse("http://localhost:5283/api/Property/create-with-images");
-    final request = http.MultipartRequest('POST', uri);
-    final headers = await getAuthHeader();
-    request.headers.addAll(headers);
-    await model.dodaj(request);
+    try {
+      const secureStorage = FlutterSecureStorage();
+      final token = await secureStorage.read(key: "token");
+      if (token == null || token.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Niste prijavljeni"), backgroundColor: Colors.red),
+        );
+        return;
+      }
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+      final uri = Uri.parse("${_baseUrl()}/api/Property/create-with-images");
+      final req = http.MultipartRequest('POST', uri)
+        ..headers['Authorization'] = "Bearer $token"
+        ..fields['Title'] = nazivController.text.trim()
+        ..fields['Description'] = opisController.text.trim()
+        ..fields['Price'] = cijenaController.text.replaceAll(',', '.').trim()
+        ..fields['Address'] = adresaController.text.trim()
+        ..fields['City'] = (odabraniGrad?.name ?? '').trim()
+        ..fields['Country'] = (odabranaDrzava?.name ?? '').trim()
+        ..fields['AgentID'] = "1"
+        ..fields['RoomCount'] = spavaceSobeController.text.trim()
+        ..fields['Area'] = "0";
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Nekretnina je uspješno dodana."),
-          backgroundColor: Colors.green,
-        ),
-      );
-      widget.onSubmitted();
-    } else {
+      final filesToSend = _slike.take(_maxImages).toList();
+      for (final f in filesToSend) {
+        req.files.add(await http.MultipartFile.fromPath('Images', f.path));
+      }
+
+      final streamed = await req.send();
+      final resp = await http.Response.fromStream(streamed);
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Nekretnina je uspješno dodana."),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onSubmitted();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text("Greška pri slanju (${resp.statusCode}): ${resp.body}"),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Greška pri slanju: ${response.statusCode}"),
+          content: Text("Greška: $e"),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
-  @override
-  void dispose() {
-    nazivController.dispose();
-    cijenaController.dispose();
-    spavaceSobeController.dispose();
-    gradController.dispose();
-    opisController.dispose();
-    adresaController.dispose();
-    drzavaController.dispose();
-    kvadraturaController.dispose();
-    super.dispose();
+  void _scrollBy(double delta) {
+    if (!_thumbsCtrl.hasClients) return;
+    final double target = math.max(
+        0.0,
+        math.min(
+            _thumbsCtrl.offset + delta, _thumbsCtrl.position.maxScrollExtent));
+    _thumbsCtrl.animateTo(target,
+        duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+    }
+
+  Widget _buildScroller({
+    required List<Widget> tiles,
+    required double availableWidth,
+    required Color arrowColor,
+  }) {
+    final int visible =
+        math.max(1, (availableWidth / (_tileSize + _tileGap)).floor());
+    final bool showArrows = tiles.length > visible;
+
+    return SizedBox(
+      height: _tileSize + 10,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Scrollbar(
+            controller: _thumbsCtrl,
+            thumbVisibility: showArrows,
+            child: SingleChildScrollView(
+              controller: _thumbsCtrl,
+              scrollDirection: Axis.horizontal,
+              child: Row(children: tiles),
+            ),
+          ),
+          if (showArrows)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: _ScrollButton(
+                right: false,
+                color: arrowColor,
+                onTap: () => _scrollBy(-(_tileSize * 2)),
+              ),
+            ),
+          if (showArrows)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: _ScrollButton(
+                right: true,
+                color: arrowColor,
+                onTap: () => _scrollBy(_tileSize * 2),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return SizedBox(
       width: 600,
       child: Padding(
@@ -518,33 +668,31 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   decoration: const InputDecoration(labelText: "Cijena (KM)"),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Unesite cijenu";
-                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
+                    if (value == null || value.isEmpty) {
+                      return "Unesite cijenu";
+                    }
+                    if (double.tryParse(value.replaceAll(',', '.')) == null) {
+                      return "Unesite ispravan broj";
+                    }
                     return null;
                   },
                 ),
                 TextFormField(
                   controller: spavaceSobeController,
-                  decoration: const InputDecoration(labelText: "Broj spavaćih soba"),
+                  decoration:
+                      const InputDecoration(labelText: "Broj spavaćih soba"),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return "Unesite broj soba";
-                    if (int.tryParse(value) == null) return "Unesite ispravan broj";
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: kvadraturaController,
-                  decoration: const InputDecoration(labelText: "Kvadratura (m²)"),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return "Unesite kvadraturu";
-                    if (double.tryParse(value) == null) return "Unesite ispravan broj";
+                    if (value == null || value.isEmpty) {
+                      return "Unesite broj soba";
+                    }
+                    if (int.tryParse(value) == null) {
+                      return "Unesite ispravan broj";
+                    }
                     return null;
                   },
                 ),
 
-                // Grad dropdown
                 ucitavanjeGradova
                     ? const CircularProgressIndicator()
                     : DropdownButtonFormField<CityDesktopModel>(
@@ -553,10 +701,9 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                         items: gradovi.map((city) {
                           return DropdownMenuItem<CityDesktopModel>(
                             value: city,
-                            child: Text(
-                              city.name,
-                              style: const TextStyle(fontWeight: FontWeight.normal)
-                            ),
+                            child: Text(city.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.normal)),
                           );
                         }).toList(),
                         onChanged: (CityDesktopModel? newValue) {
@@ -564,32 +711,32 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                             odabraniGrad = newValue;
                           });
                         },
-                        validator: (value) => value == null ? "Odaberite grad" : null,
+                        validator: (value) =>
+                            value == null ? "Odaberite grad" : null,
                       ),
 
-                  ucitavanjeDrzava
-      ? const CircularProgressIndicator()
-      : DropdownButtonFormField<CountryDesktopModel>(
-          decoration: const InputDecoration(labelText: "Država"),
-          value: odabranaDrzava,
-          items: drzave.map((drzava) {
-            return DropdownMenuItem<CountryDesktopModel>(
-              value: drzava,
-              child: Text(
-                drzava.name,
-                style: const TextStyle(fontWeight: FontWeight.normal),
-              ),
-            );
-          }).toList(),
-          onChanged: (CountryDesktopModel? newValue) {
-            setState(() {
-              odabranaDrzava = newValue;
-            });
-          },
-          validator: (value) => value == null ? "Odaberite državu" : null,
-        ),
-
-
+                ucitavanjeDrzava
+                    ? const CircularProgressIndicator()
+                    : DropdownButtonFormField<CountryDesktopModel>(
+                        decoration:
+                            const InputDecoration(labelText: "Država"),
+                        value: odabranaDrzava,
+                        items: drzave.map((drzava) {
+                          return DropdownMenuItem<CountryDesktopModel>(
+                            value: drzava,
+                            child: Text(drzava.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.normal)),
+                          );
+                        }).toList(),
+                        onChanged: (CountryDesktopModel? newValue) {
+                          setState(() {
+                            odabranaDrzava = newValue;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null ? "Odaberite državu" : null,
+                      ),
 
                 TextFormField(
                   controller: adresaController,
@@ -604,69 +751,145 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   validator: (value) =>
                       (value == null || value.isEmpty) ? "Unesite opis" : null,
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text("Odaberi slike"),
-                  onPressed: odaberiSlike,
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 110,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _slike.asMap().entries.map((entry) {
-                        int index = entry.key;
-                        File slika = entry.value;
 
-                        return Stack(
+                const SizedBox(height: 12),
+
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text("Odaberi slike"),
+                      onPressed:
+                          _slike.length >= _maxImages ? null : odaberiSlike,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${_slike.length}/$_maxImages',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (_slike.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Još niste odabrali slike'),
+                        ),
+                      );
+                    }
+
+                    final tiles = List.generate(_slike.length, (i) {
+                      final slika = _slike[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: _tileGap),
+                        child: Stack(
                           children: [
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  slika,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                slika,
+                                width: _tileSize,
+                                height: _tileSize,
+                                fit: BoxFit.cover,
                               ),
                             ),
                             Positioned(
-                              right: 0,
-                              top: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _slike.removeAt(index);
-                                  });
-                                },
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black54,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.close,
-                                      color: Colors.white, size: 20),
-                                ),
+                              right: 6,
+                              top: 6,
+                              child: _CircleIconButton(
+                                icon: Icons.close,
+                                onTap: () =>
+                                    setState(() => _slike.removeAt(i)),
+                                bgColor: Colors.black87,
                               ),
                             ),
                           ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
+                        ),
+                      );
+                    });
+
+                    return _buildScroller(
+                      tiles: tiles,
+                      availableWidth: constraints.maxWidth,
+                      arrowColor: primary,
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 12),
+
                 ElevatedButton(
-                  child: const Text("Dodaj nekretninu"),
-                  onPressed: _posaljiNaBackend,
+                  child: _saving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Dodaj nekretninu"),
+                  onPressed: _saving ? null : _posaljiNaBackend,
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+class _ScrollButton extends StatelessWidget {
+  final bool right;
+  final VoidCallback onTap;
+  final Color color;
+  const _ScrollButton(
+      {required this.right, required this.onTap, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: color.withOpacity(0.92),
+        shape: const CircleBorder(),
+        elevation: 3,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(right ? Icons.chevron_right : Icons.chevron_left,
+                color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color bgColor;
+  const _CircleIconButton(
+      {required this.icon, required this.onTap, required this.bgColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: bgColor,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 30,
+          height: 30,
+          child: Icon(Icons.close, color: Colors.white, size: 18),
         ),
       ),
     );

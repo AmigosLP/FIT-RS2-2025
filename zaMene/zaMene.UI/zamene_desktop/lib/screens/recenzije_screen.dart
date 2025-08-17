@@ -67,7 +67,7 @@ class _RecenzijeScreenState extends State<RecenzijeScreen> {
   }
 
   Future<void> _showEditDialog(ReviewDesktopModel review) async {
-    final _commentController = TextEditingController(text: review.comment);
+    final commentController = TextEditingController(text: review.comment);
     int currentRating = review.rating;
 
     await showDialog(
@@ -98,7 +98,7 @@ class _RecenzijeScreenState extends State<RecenzijeScreen> {
                 }),
               ),
               TextField(
-                controller: _commentController,
+                controller: commentController,
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Komentar',
@@ -117,7 +117,7 @@ class _RecenzijeScreenState extends State<RecenzijeScreen> {
                 final updatedReview = ReviewDesktopModel(
                   reviewID: review.reviewID,
                   rating: currentRating,
-                  comment: _commentController.text,
+                  comment: commentController.text,
                   userFullName: review.userFullName,
                   propertyName: review.propertyName,
                   address: review.address,
@@ -262,7 +262,7 @@ class _RecenzijeScreenState extends State<RecenzijeScreen> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

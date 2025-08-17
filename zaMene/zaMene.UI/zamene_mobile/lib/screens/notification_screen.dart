@@ -32,35 +32,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _loadNotifications() async {
+  setState(() {
+    _loading = true;
+    _error = null;
+  });
+
+  try {
+    final userId = _extractUserIdFromToken();
+    if (userId == null) throw Exception("Korisnik nije autentificiran");
+
+    final notifications = await NotificationService().getNotifications();
+
+    final userNotifications = notifications
+        .where((n) => n.userId == userId && (n.isRead ?? false) == false)
+        .toList();
+
+    final unreadCount = userNotifications.length;
+    Provider.of<NotificationProvider>(context, listen: false)
+        .setUnreadCount(unreadCount);
+
     setState(() {
-      _loading = true;
-      _error = null;
+      _notifications = userNotifications;
     });
-
-    try {
-      final userId = _extractUserIdFromToken();
-      if (userId == null) throw Exception("Korisnik nije autentificiran");
-
-      final notifications = await NotificationService().getNotifications();
-
-      final userNotifications = notifications.where((n) => n.userId == userId).toList();
-
-      final unreadCount = userNotifications.where((n) => n.isRead == false).length;
-      Provider.of<NotificationProvider>(context, listen: false).setUnreadCount(unreadCount);
-
-      setState(() {
-        _notifications = userNotifications;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      setState(() {
-        _loading = false;
-      });
-    }
+  } catch (e) {
+    setState(() {
+      _error = e.toString();
+    });
+  } finally {
+    setState(() {
+      _loading = false;
+    });
   }
+}
+
 
   @override
   void initState() {

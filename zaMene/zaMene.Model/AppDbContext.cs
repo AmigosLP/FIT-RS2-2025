@@ -29,48 +29,54 @@ namespace zaMene.Model
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<IdentityUserLogin<int>>(b =>
-            {
-                b.HasKey(login => new { login.LoginProvider, login.ProviderKey });
-            });
+            //modelBuilder.Entity<IdentityUserLogin<int>>(b =>
+            //{
+            //    b.HasKey(login => new { login.LoginProvider, login.ProviderKey });
+            //});
 
-            modelBuilder.Entity<IdentityUserRole<int>>(b =>
-            {
-                b.HasKey(r => new { r.UserId, r.RoleId });
-            });
+            //modelBuilder.Entity<IdentityUserRole<int>>(b =>
+            //{
+            //    b.HasKey(r => new { r.UserId, r.RoleId });
+            //});
 
-            modelBuilder.Entity<IdentityUserToken<int>>(b =>
-            {
-                b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
-            });
+            //modelBuilder.Entity<IdentityUserToken<int>>(b =>
+            //{
+            //    b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
+            //});
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
-            modelBuilder.Entity<Property>()
-                .HasOne(p => p.Agent)
+            modelBuilder.Entity<Property>(e => {
+                e.Property(p => p.Price)
+                .HasPrecision(18, 2);
+                e.Property(p => p.Area)
+                .HasPrecision(18, 2);
+                e.HasOne(p => p.Agent)
                 .WithMany()
                 .HasForeignKey(p => p.AgentID)
-                .OnDelete(DeleteBehavior.Restrict);   
+                .OnDelete(DeleteBehavior.NoAction);
+            });
+        
 
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reservations)
                 .HasForeignKey(r => r.UserID)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Reservation>()
                 .HasOne(r => r.Property)
                 .WithMany(p => p.Reservations)
                 .HasForeignKey(r => r.PropertyID)
-                .OnDelete(DeleteBehavior.Restrict);    
+                .OnDelete(DeleteBehavior.Cascade);    
 
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reviews)
                 .HasForeignKey(r => r.UserID)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Property)
@@ -84,13 +90,13 @@ namespace zaMene.Model
                 .HasForeignKey(p => p.ReservationID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Property>()
-                .Property(p => p.Price)
-                .HasPrecision(18, 2);
+            //modelBuilder.Entity<Property>()
+            //    .Property(p => p.Price)
+            //    .HasPrecision(18, 2);
 
-            modelBuilder.Entity<Property>()
-                .Property(p => p.Area)
-                .HasPrecision(18, 2);
+            //modelBuilder.Entity<Property>()
+            //    .Property(p => p.Area)
+            //    .HasPrecision(18, 2);
 
             modelBuilder.Entity<Reservation>()
                 .Property(r => r.TotalPrice)
@@ -112,6 +118,12 @@ namespace zaMene.Model
                 .HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleID);
+
+            modelBuilder.Entity<Notification>()
+                .HasOne(u => u.User)
+                .WithMany(n => n.Notifications)
+                .HasForeignKey(un => un.UserID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

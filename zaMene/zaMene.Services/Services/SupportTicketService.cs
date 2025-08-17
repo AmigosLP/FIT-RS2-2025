@@ -65,6 +65,17 @@ namespace zaMene.Services.Service
                 entity.ResolvedAt = DateTime.UtcNow;
             }
 
+            _context.Notification.Add(new Notification
+            {
+                UserID = entity.UserID,
+                Title = "Odgovor na vaš tiket",
+                Message = response.Length > 200 ? response.Substring(0, 200) + "..." : response,
+                Type = "support",
+                CreatedAt = DateTime.UtcNow,
+                // Ako dodaš polje u model/migraciji:
+                // RelatedTicketId = entity.SupportTicketID
+            });
+
             await _context.SaveChangesAsync();
             return entity;
         }

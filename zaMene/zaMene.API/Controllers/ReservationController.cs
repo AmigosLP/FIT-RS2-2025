@@ -43,24 +43,31 @@ namespace zaMene.Controllers
         [HttpPost("Create-custom")]
         public async Task<IActionResult> CreateReservation([FromBody] ReservationDto reservationDto)
         {
-            if (reservationDto == null)
-                return BadRequest("Invalid reservation data.");
 
-            if (reservationDto.StartDate >= reservationDto.EndDate)
-                return BadRequest("Startni datum mora biti prije završnog.");
+            try {
+                if (reservationDto == null)
+                    return BadRequest("Invalid reservation data.");
 
-            var available = await _reservationService.IsPropertyAvailable(
-                reservationDto.PropertyID,
-                reservationDto.StartDate,
-                reservationDto.EndDate);
+                if (reservationDto.StartDate >= reservationDto.EndDate)
+                    return BadRequest("Startni datum mora biti prije završnog.");
 
-            if (!available)
-                return Conflict("Nekretnina je već zauzeta u datom periodu.");
+                var available = await _reservationService.IsPropertyAvailable(
+                    reservationDto.PropertyID,
+                    reservationDto.StartDate,
+                    reservationDto.EndDate);
 
-            var reservation = _mapper.Map<Reservation>(reservationDto);
-            var createdReservation = await _reservationService.CreateReservation(reservation);
+                if (!available)
+                    return Conflict("Nekretnina je već zauzeta u datom periodu.");
 
-            return CreatedAtAction(nameof(GetReservationById), new { id = createdReservation.ReservationID }, createdReservation);
+                var reservation = _mapper.Map<Reservation>(reservationDto);
+                var createdReservation = await _reservationService.CreateReservation(reservation);
+
+                return CreatedAtAction(nameof(GetReservationById), new { id = createdReservation.ReservationID }, createdReservation);
+            } catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+          
         }
 
         [Authorize(AuthenticationSchemes = "Bearer")]

@@ -25,7 +25,7 @@ namespace zaMene.Services.Service
         public override IQueryable<Notification> AddFilter(NotificationSearchObject search, IQueryable<Notification> query)
         {
             if (search.UserId.HasValue)
-                query = query.Where(n => n.UserId == search.UserId.Value);
+                query = query.Where(n => n.UserID == search.UserId.Value);
 
             if (search.IsRead.HasValue)
                 query = query.Where(n => n.IsRead == search.IsRead.Value);
@@ -91,7 +91,7 @@ namespace zaMene.Services.Service
                 Title = n.Title,
                 Message = n.Message,
                 Type = n.Type,
-                UserId = n.UserId,
+                UserID = n.UserID,
                 IsRead = n.IsRead,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt
@@ -103,7 +103,7 @@ namespace zaMene.Services.Service
         public async Task<int> GetUnreadNotificationCount(int userId)
         {
             return await _context.Notification
-                .CountAsync(n => n.UserId == userId && n.IsRead == false);
+                .CountAsync(n => n.UserID == userId && n.IsRead == false);
         }
     }
 }

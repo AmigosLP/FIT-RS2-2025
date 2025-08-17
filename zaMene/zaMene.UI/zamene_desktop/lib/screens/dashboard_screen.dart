@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:zamene_desktop/models/property_statistics_model.dart';
 import 'package:zamene_desktop/providers/property_statistics_provider.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -44,7 +43,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
  void _exportAsPDF() async {
   final pdf = pw.Document();
 
-  // Učitaj font koji podržava č, š, ž...
   final fontData = await rootBundle.load('assets/NotoSans-Regular.ttf');
   final ttf = pw.Font.ttf(fontData);
 
@@ -75,11 +73,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     ),
   );
 
-  // Spremi PDF u isti folder kao app (ili koristi desktop path)
   final file = File('izvjestaj.pdf');
   await file.writeAsBytes(await pdf.save());
 
-  // Možeš dodat i poruku
   print("PDF uspješno spremljen: ${file.path}");
 }
 

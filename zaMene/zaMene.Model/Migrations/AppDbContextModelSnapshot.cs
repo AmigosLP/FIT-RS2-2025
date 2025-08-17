@@ -17,61 +17,10 @@ namespace zaMene.Model.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
-                {
-                    b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ProviderKey")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LoginProvider", "ProviderKey");
-
-                    b.ToTable("IdentityUserLogin<int>");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "RoleId");
-
-                    b.ToTable("IdentityUserRole<int>");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UserId", "LoginProvider", "Name");
-
-                    b.ToTable("IdentityUserToken<int>");
-                });
 
             modelBuilder.Entity("zaMene.Model.Entity.Category", b =>
                 {
@@ -188,10 +137,12 @@ namespace zaMene.Model.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserId")
+                    b.Property<int>("UserID")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserID");
 
                     b.ToTable("Notification");
                 });
@@ -542,6 +493,17 @@ namespace zaMene.Model.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("zaMene.Model.Entity.Notification", b =>
+                {
+                    b.HasOne("zaMene.Model.Entity.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("zaMene.Model.Entity.Payment", b =>
                 {
                     b.HasOne("zaMene.Model.Entity.Reservation", "Reservation")
@@ -558,7 +520,7 @@ namespace zaMene.Model.Migrations
                     b.HasOne("zaMene.Model.Entity.User", "Agent")
                         .WithMany()
                         .HasForeignKey("AgentID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("zaMene.Model.Entity.Category", null)
@@ -592,13 +554,13 @@ namespace zaMene.Model.Migrations
                     b.HasOne("zaMene.Model.Entity.Property", "Property")
                         .WithMany("Reservations")
                         .HasForeignKey("PropertyID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("zaMene.Model.Entity.User", "User")
                         .WithMany("Reservations")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Property");
@@ -617,7 +579,7 @@ namespace zaMene.Model.Migrations
                     b.HasOne("zaMene.Model.Entity.User", "User")
                         .WithMany("Reviews")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Property");
@@ -686,6 +648,8 @@ namespace zaMene.Model.Migrations
 
             modelBuilder.Entity("zaMene.Model.Entity.User", b =>
                 {
+                    b.Navigation("Notifications");
+
                     b.Navigation("Reservations");
 
                     b.Navigation("Reviews");

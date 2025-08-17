@@ -13,7 +13,6 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  // Ako backend vraća relativne URL-ove
   static const String backendBaseUrl = 'http://10.0.2.2:5283';
 
   String resolveImage(String? path) {
@@ -24,10 +23,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   late Future<List<PropertyModel>> _future;
 
   Future<List<PropertyModel>> _loadFavoriteProperties(Set<int> favoriteIds) async {
-    // Ako već imaš endpoint /Favorite/mine koji vraća kompletne nekretnine,
-    // možeš ovdje pozvati taj endpoint umjesto filtriranja svih.
     final all = await PropertyService().getAllProperties();
-    return all.where((p) => p.propertyID != null && favoriteIds.contains(p.propertyID!)).toList();
+    return all.where((p) => favoriteIds.contains(p.propertyID)).toList();
   }
 
   @override
@@ -57,7 +54,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       ),
       body: Consumer<FavoriteProvider>(
         builder: (context, favProv, _) {
-          // Resync prikaza kada se promijene favoriti
           _future = _loadFavoriteProperties(favProv.ids);
 
           return FutureBuilder<List<PropertyModel>>(
@@ -89,10 +85,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: GridView.builder(
                   padding: const EdgeInsets.all(20),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,          // dvije u redu
+                    crossAxisCount: 2,
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
-                    childAspectRatio: 180 / 230, // približno kao na home-u
+                    childAspectRatio: 180 / 230,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, i) {
@@ -106,12 +102,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PropertyDetailScreen(nekretnina: p.toJson()),
+                            builder: (_) => PropertyDetailScreen(property: p),
                           ),
                         );
                       },
                       child: Container(
-                        // ISTI DIZAJN KARTICE KAO NA HOME SCREEN-U
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.grey[200],
@@ -127,7 +122,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Slika + srce (isto kao Home)
                             Stack(
                               children: [
                                 ClipRRect(
@@ -157,22 +151,18 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                       child: InkWell(
                                         customBorder: const CircleBorder(),
                                         onTap: () async {
-                                          if (p.propertyID == null) return;
-                                          final wasFav = favProv.isFavorite(p.propertyID!);
+                                          final wasFav = favProv.isFavorite(p.propertyID);
                                           try {
-                                            await favProv.toggle(p.propertyID!);
+                                            await favProv.toggle(p.propertyID);
                                             if (!context.mounted) return;
                                             ScaffoldMessenger.of(context)
                                               ..hideCurrentSnackBar()
                                               ..showSnackBar(
                                                 SnackBar(
                                                   content: Text(
-                                                    wasFav
-                                                        ? 'Uklonjeno iz favorita'
-                                                        : 'Dodano u favorite',
+                                                    wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite',
                                                   ),
-                                                  backgroundColor:
-                                                      wasFav ? Colors.red : Colors.green,
+                                                  backgroundColor: wasFav ? Colors.red : Colors.green,
                                                   behavior: SnackBarBehavior.floating,
                                                   duration: const Duration(seconds: 2),
                                                 ),
@@ -195,7 +185,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                             favProv.isFavorite(p.propertyID ?? -1)
                                                 ? Icons.favorite
                                                 : Icons.favorite_border,
-                                            size: 18, // ista manja veličina kao na home-u
+                                            size: 18,
                                             color: favProv.isFavorite(p.propertyID ?? -1)
                                                 ? Colors.red
                                                 : Colors.black54,

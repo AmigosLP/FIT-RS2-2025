@@ -32,5 +32,7 @@ namespace zaMene.Model.Entity
         public string? Phone { get; set; }
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
         public List<Review> Reviews { get; set; } = new List<Review>();
+
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }

@@ -61,12 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadHomepageRecommendations() async {
     try {
       final userId = await UserService().getUserIdFromToken();
-      if (userId == null) {
-        setState(() {
-          loadingTopPonuda = false;
-        });
-        return;
-      }
       final data = await PropertyService().getHomepageRecommendations(userId);
       setState(() {
         homepageRecommendation = data;
@@ -98,10 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Center(
           child: Text('Potvrda odjave', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 22)),
         ),
-        content: SizedBox(
+        content: const SizedBox(
           height: 60,
           child: Center(
-            child: Text('Da li ste sigurni da želite odjaviti se?', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            child: Text('Da li ste sigurni da želite odjaviti se?', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
           ),
         ),
         actionsAlignment: MainAxisAlignment.center,
@@ -147,8 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Provider.of<NotificationProvider>(context, listen: false).fetchUnreadCount();
-
-      // === NOVO: inicijalno povuci favorite sa servera ===
       try {
         await Provider.of<FavoriteProvider>(context, listen: false).syncFromServer();
       } catch (_) {}
@@ -224,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   Row(
                     children: [
-                      // === NOVO: prečac na Favorites screen ===
                       IconButton(
                         icon: const Icon(Icons.favorite),
                         tooltip: 'Favoriti',
@@ -345,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (homepageRecommendation!.message.isNotEmpty)
+                    if ((homepageRecommendation?.message ?? '').isNotEmpty)
                       Text(homepageRecommendation!.message, style: TextStyle(color: Colors.grey[600])),
                     const SizedBox(height: 10),
                     SizedBox(
@@ -374,18 +365,21 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PropertyDetailScreen(nekretnina: p.toJson())),
+          MaterialPageRoute(builder: (_) => PropertyDetailScreen(property: p)),
         );
       },
       child: Container(
         width: 180,
         margin: const EdgeInsets.only(right: 16),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 4))],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // === SLIKA + SRCE (favorites toggle) ===
             Stack(
               children: [
                 ClipRRect(
@@ -398,66 +392,61 @@ class _HomeScreenState extends State<HomeScreen> {
                         : Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
                   ),
                 ),
-Positioned(
-  top: 6,
-  right: 6,
-  child: Consumer<FavoriteProvider>(
-    builder: (context, favProv, _) {
-      final isFav = (p.propertyID != null) && favProv.isFavorite(p.propertyID!);
-      return SizedBox(
-        width: 32,
-        height: 32,
-        child: Material(
-          color: Colors.white.withOpacity(0.9),
-          shape: const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: () async {
-              if (p.propertyID == null) return;
-              final wasFav = isFav;
-              try {
-                await favProv.toggle(p.propertyID!);
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite',
-                      ),
-                      backgroundColor: wasFav ? Colors.red : Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text('Greška: $e'),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-              }
-            },
-            child: Center(
-              child: Icon(
-                isFav ? Icons.favorite : Icons.favorite_border,
-                size: 18, // smanjeno
-                color: isFav ? Colors.red : Colors.black54,
-              ),
-            ),
-          ),
-        ),
-      );
-    },
-  ),
-),
-
-
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Consumer<FavoriteProvider>(
+                    builder: (context, favProv, _) {
+                      final isFav = (p.propertyID != null) && favProv.isFavorite(p.propertyID);
+                      return SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Material(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () async {
+                              final wasFav = isFav;
+                              try {
+                                await favProv.toggle(p.propertyID);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text(wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite'),
+                                      backgroundColor: wasFav ? Colors.red : Colors.green,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text('Greška: $e'),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                              }
+                            },
+                            child: Center(
+                              child: Icon(
+                                isFav ? Icons.favorite : Icons.favorite_border,
+                                size: 18,
+                                color: isFav ? Colors.red : Colors.black54,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),

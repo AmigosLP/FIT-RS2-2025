@@ -11,7 +11,7 @@ class NotAdminException implements Exception {
 }
 
 class LoginPage extends StatefulWidget {
-  LoginPage({super.key});
+  const LoginPage({super.key});
 
   @override
   State<LoginPage> createState() => _LoginPageState();

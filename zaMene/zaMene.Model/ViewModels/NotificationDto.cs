@@ -9,7 +9,7 @@ namespace zaMene.Model.ViewModel
     public class NotificationDto
     {
         public int NotificationID { get; set; }
-        public int UserId { get; set; }
+        public int UserID { get; set; }
         public string Title { get; set; }
         public string Message { get; set; }
         public string Type { get; set; }

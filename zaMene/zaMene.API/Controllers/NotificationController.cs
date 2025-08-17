@@ -47,18 +47,27 @@ public class NotificationController : BaseCRUDController<Notification, Notificat
     public async Task<IActionResult> GetAllForCurrentUser()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             return Unauthorized();
 
-        if (!int.TryParse(userIdClaim.Value, out int userId))
-            return Unauthorized();
-
-        var notifications = await _context.Notification
-            .Where(n => n.UserId == userId)
+        var list = await _context.Notification
+            .Where(n => n.UserID == userId)
             .OrderByDescending(n => n.CreatedAt)
             .ToListAsync();
 
-        return Ok(notifications);
+        var dto = list.Select(n => new NotificationDto
+        {
+            NotificationID = n.Id,
+            Title = n.Title,
+            Message = n.Message,
+            Type = n.Type,
+            UserID = n.UserID,
+            IsRead = n.IsRead,
+            CreatedAt = n.CreatedAt,
+            UpdatedAt = n.UpdatedAt
+        });
+
+        return Ok(dto);
     }
 
     [Authorize(AuthenticationSchemes = "Bearer")]
@@ -73,7 +82,7 @@ public class NotificationController : BaseCRUDController<Notification, Notificat
             return Unauthorized();
 
         var count = await _context.Notification
-            .Where(n => n.UserId == userId && !n.IsRead)
+            .Where(n => n.UserID == userId && !n.IsRead)
             .CountAsync();
 
         return Ok(new { count });

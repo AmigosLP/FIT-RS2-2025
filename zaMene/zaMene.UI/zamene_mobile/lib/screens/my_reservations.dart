@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zamene_mobile/models/my_reservations_model.dart';
+import 'package:zamene_mobile/models/property_model.dart';
 import 'package:zamene_mobile/screens/property_detail_screen.dart';
 import 'package:zamene_mobile/services/reservation_service.dart';
 
@@ -70,21 +71,38 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
-                    final propertyMap = {
-                      'propertyID': r.propertyID,
-                      'title': r.propertyTitle,
-                      'city': r.propertyCity,
-                      'price': r.propertyPrice,
-                      "imageUrls": r.propertyImageUrls,
-                      'description': r.propertyDescription,
-                      'agentName': r.propertyAgentName,
-                      'agentPhone': r.propertyAgentPhone,
-                    };
+                    // -- Sigurna konverzija liste URL-ova u List<String>
+                    List<String> _asStringList(dynamic v) {
+                      if (v == null) return <String>[];
+                      if (v is List<String>) return v;
+                      if (v is List) {
+                        return v
+                            .map((e) => e?.toString() ?? '')
+                            .where((s) => s.trim().isNotEmpty)
+                            .toList();
+                      }
+                      return <String>[];
+                    }
+
+                    final prop = PropertyModel(
+                      propertyID: r.propertyID,
+                      title: r.propertyTitle,
+                      description: r.propertyDescription,
+                      price: r.propertyPrice, // double?
+                      city: r.propertyCity,
+                      // polja koja nemaš u rezervaciji ostavi null/empty
+                      address: null,
+                      averageRating: null,
+                      agentFullName: r.propertyAgentName,
+                      agentPhoneNumber: r.propertyAgentPhone,
+                      agentProfileImageUrl: null,
+                      imageUrls: _asStringList(r.propertyImageUrls),
+                    );
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            PropertyDetailScreen(nekretnina: propertyMap),
+                        builder: (_) => PropertyDetailScreen(property: prop),
                       ),
                     );
                   },

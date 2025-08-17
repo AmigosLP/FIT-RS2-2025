@@ -55,7 +55,7 @@ namespace zaMene.Services.Service
 
             var notificationDto = new NotificationDto
             {
-                UserId = reservation.UserID,
+                UserID = reservation.UserID,
                 Type = "ReservationCreated",
                 Title = "Uspješna rezervacija",
                 Message = $"Uspješno ste rezervisali nekretninu '{property?.Title ?? "ID: " + reservation.PropertyID}' od {reservation.StartDate:d} do {reservation.EndDate:d}.",

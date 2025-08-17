@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using Mapster.Models;
 using MapsterMapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
@@ -11,7 +12,6 @@ using zaMene.Model.SearchObjects;
 using zaMene.Model.ViewModel;
 using zaMene.Services.Interface;
 
-
 namespace zaMene.Services.Service
 {
     public class PropertyService : BaseCRUDService<Property, PropertySearchObject, Property, PropertyDto, PropertyUpdateDto>, IPropertyService
@@ -20,10 +20,15 @@ namespace zaMene.Services.Service
         static MLContext mlContext = null;
         static object isLocked = new object();
         static ITransformer model = null;
+        private readonly IWebHostEnvironment _env;
+        private readonly IHttpContextAccessor _http; // <— za apsolutne URL-ove
 
-        public PropertyService(AppDbContext context, IMapper mapper) : base(context, mapper)
+        public PropertyService(AppDbContext context, IMapper mapper, IWebHostEnvironment env, IHttpContextAccessor http)
+            : base(context, mapper)
         {
             _context = context;
+            _env = env;
+            _http = http;
         }
 
         public override IQueryable<Property> AddFilter(PropertySearchObject search, IQueryable<Property> query)
@@ -66,9 +71,16 @@ namespace zaMene.Services.Service
                 p.AgentID,
                 p.RoomCount,
                 p.Area,
-                imageUrls = p.Images.Select(i => i.ImageUrl).ToList(),
-                AgentFullName = $"{p.Agent.FirstName} {p.Agent.LastName}",
-                AgentPhoneNumber = p.Agent.Phone
+                // ✅ vraćamo i imageUrls (apsolutne)
+                imageUrls = p.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList(),
+                // ✅ i images[] sa apsolutnim url-om
+                images = p.Images.Select(i => new
+                {
+                    id = i.PropertyImageID,
+                    url = MakeAbsolute(i.ImageUrl)
+                }).ToList(),
+                AgentFullName = p.Agent != null ? $"{p.Agent.FirstName} {p.Agent.LastName}" : null,
+                AgentPhoneNumber = p.Agent?.Phone
             });
         }
 
@@ -109,28 +121,31 @@ namespace zaMene.Services.Service
 
             var savedImageUrls = new List<string>();
 
-            foreach (var file in request.Images)
+            if (request.Images != null)
             {
-                if (file != null && file.Length > 0)
+                foreach (var file in request.Images)
                 {
-                    var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
-                        throw new Exception("Dozvoljeni su samo .jpg, .jpeg i .png formati slika.");
-
-                    var uniqueFileName = Guid.NewGuid().ToString() + extension;
-                    var filePath = Path.Combine(uploadPath, uniqueFileName);
-
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await file.CopyToAsync(stream);
-
-                    var imageUrl = $"/images/properties/{uniqueFileName}";
-                    savedImageUrls.Add(imageUrl);
-
-                    _context.PropertyImages.Add(new PropertyImage
+                    if (file != null && file.Length > 0)
                     {
-                        PropertyID = property.PropertyID,
-                        ImageUrl = imageUrl
-                    });
+                        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                        if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+                            throw new Exception("Dozvoljeni su samo .jpg, .jpeg i .png formati slika.");
+
+                        var uniqueFileName = Guid.NewGuid().ToString() + extension;
+                        var filePath = Path.Combine(uploadPath, uniqueFileName);
+
+                        using var stream = new FileStream(filePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+
+                        var relUrl = $"/images/properties/{uniqueFileName}";
+                        savedImageUrls.Add(MakeAbsolute(relUrl));
+
+                        _context.PropertyImages.Add(new PropertyImage
+                        {
+                            PropertyID = property.PropertyID,
+                            ImageUrl = relUrl
+                        });
+                    }
                 }
             }
 
@@ -140,7 +155,7 @@ namespace zaMene.Services.Service
             {
                 property.PropertyID,
                 property.Title,
-                Slike = savedImageUrls,
+                imageUrls = savedImageUrls, // ✅ odmah vraćamo apsolutne
                 message = "Nekretnina uspješno kreirana sa slikama."
             };
         }
@@ -171,13 +186,13 @@ namespace zaMene.Services.Service
                     using var stream = new FileStream(filePath, FileMode.Create);
                     await file.CopyToAsync(stream);
 
-                    var imageUrl = $"/images/properties/{uniqueFileName}";
-                    savedImageUrls.Add(imageUrl);
+                    var relUrl = $"/images/properties/{uniqueFileName}";
+                    savedImageUrls.Add(MakeAbsolute(relUrl));
 
                     _context.PropertyImages.Add(new PropertyImage
                     {
                         PropertyID = property.PropertyID,
-                        ImageUrl = imageUrl
+                        ImageUrl = relUrl
                     });
                 }
             }
@@ -187,7 +202,7 @@ namespace zaMene.Services.Service
             return new
             {
                 property.PropertyID,
-                noveSlike = savedImageUrls,
+                imageUrls = savedImageUrls, // ✅ apsolutne
                 message = "Slike su uspješno dodane postojećoj nekretnini."
             };
         }
@@ -210,7 +225,6 @@ namespace zaMene.Services.Service
                 {
                     File.Delete(imagePath);
                 }
-
             }
             _context.PropertyImages.RemoveRange(property.Images);
             _context.Properties.Remove(property);
@@ -241,10 +255,15 @@ namespace zaMene.Services.Service
                 property.AgentID,
                 property.RoomCount,
                 property.Area,
-                imageUrls = property.Images.Select(i => i.ImageUrl).ToList(),
-                AgentFullName = $"{property.Agent.FirstName} {property.Agent.LastName}",
-                AgentImageUrl = property.Agent.ProfileImagePath,
-                AgentPhoneNumber = property.Agent.Phone
+                imageUrls = property.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList(), // ✅
+                images = property.Images.Select(i => new
+                {
+                    id = i.PropertyImageID,
+                    url = MakeAbsolute(i.ImageUrl) // ✅
+                }).ToList(),
+                AgentFullName = property.Agent != null ? $"{property.Agent.FirstName} {property.Agent.LastName}" : null,
+                AgentImageUrl = property.Agent?.ProfileImagePath, // možeš i ovo normalizirati ako želiš: MakeAbsolute(...)
+                AgentPhoneNumber = property.Agent?.Phone
             };
         }
 
@@ -274,11 +293,11 @@ namespace zaMene.Services.Service
 
                 foreach (var slika in slikeZaBrisati)
                 {
-                    if (!string.IsNullOrEmpty(slika.ImageUrl) && File.Exists(slika.ImageUrl))
+                    var abs = ToAbsolutePath(slika.ImageUrl);
+                    if (System.IO.File.Exists(abs))
                     {
-                        File.Delete(slika.ImageUrl);
+                        try { System.IO.File.Delete(abs); } catch { /* log */ }
                     }
-
                     _context.PropertyImages.Remove(slika);
                 }
             }
@@ -490,9 +509,29 @@ namespace zaMene.Services.Service
                 AverageRating = p.Reviews.Any() ? p.Reviews.Average(r => r.Rating) : 0,
                 AgentFullName = p.Agent != null ? p.Agent.FirstName + " " + p.Agent.LastName : null,
                 AgentPhoneNumber = p.Agent != null ? p.Agent.Phone : null,
-                AgentProfileImageUrl = p.Agent != null ? p.Agent.ProfileImagePath : null,
-                ImageUrls = p.Images.Select(i => "http://10.0.2.2:5283" + i.ImageUrl).ToList()
+                AgentProfileImageUrl = p.Agent?.ProfileImagePath,
+                ImageUrls = p.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList()
             }).ToList();
+        }
+
+        private string ToAbsolutePath(string webPath)
+        {
+            var rel = (webPath ?? "").Replace('\\', '/');
+            if (rel.StartsWith("/")) rel = rel.Substring(1);
+            var root = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            return Path.Combine(root, rel);
+        }
+
+        private string MakeAbsolute(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url ?? "";
+            var normalized = url.Replace('\\', '/');
+            if (normalized.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return normalized;
+
+            var req = _http.HttpContext?.Request;
+            var baseUrl = $"{req?.Scheme}://{req?.Host.Value}";
+            if (!normalized.StartsWith("/")) normalized = "/" + normalized;
+            return baseUrl + normalized;
         }
     }
 }
