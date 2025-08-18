@@ -116,3 +116,6 @@ Kroz seed podataka, imate mogućnost pregleda raznih korisnika, neki od tih su:
 ## Paypal kredencijali
 `email: rszamene@personal.example.com`
 `password: 3J@w@GH?`
+
+## Password for extract apk build
+`fit`
