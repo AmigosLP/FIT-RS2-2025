@@ -85,7 +85,10 @@ Aplikacija pruža efikasan sistem za upravljanje nekretninama. Mogućnost odabir
 Ako pokrećemo aplikaciju preko build (zipovano) foldera unutar projekta, sve što trebamo jeste:
 - Extract 7zip folder da imamo sve fajlove
 - Na admin strani pokrenuti .exe file i pokrenut ćemo zamene_desktop
-- Drag and Drop APK fajl u AVD emulator na zamene_mobile i time ćemo pristupit aplikaciji i moći se logirati. 
+- Drag and Drop APK fajl u AVD emulator na zamene_mobile i time ćemo pristupit aplikaciji i moći se logirati.
+
+## Password for extract apk build
+`fit`
 
 ## Kredencijali
 Za desktop dio sljedeci kredencijali su dostupni
@@ -122,6 +125,3 @@ Kroz seed podataka, imate mogućnost pregleda raznih korisnika, neki od tih su:
 ## Paypal kredencijali
 `email: rszamene@personal.example.com`
 `password: 3J@w@GH?`
-
-## Password for extract apk build
-`fit`
