@@ -53,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var property in properties) {
       property.averageRating = await PropertyService().getAveragePropertyRating(property.propertyID);
     }
+    if (!mounted) return;
     setState(() {
       nekretnineFuture = Future.value(properties);
     });
@@ -62,11 +63,13 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final userId = await UserService().getUserIdFromToken();
       final data = await PropertyService().getHomepageRecommendations(userId);
+      if (!mounted) return;
       setState(() {
         homepageRecommendation = data;
         loadingTopPonuda = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         homepageRecommendation = null;
         loadingTopPonuda = false;
@@ -77,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadProfilnaSlika() async {
     try {
       final profil = await UserService().getUserProfile();
+      if (!mounted) return;
       setState(() {
         profilePictureUrl = profil['profileImageUrl'];
       });
@@ -126,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     gradoviFuture = CityService().getCities();
     gradoviFuture.then((lista) {
+      if (!mounted) return;
       setState(() {
         gradovi = lista;
         if (gradovi.isNotEmpty) {
@@ -362,11 +367,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCard(PropertyModel p) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final changed = await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => PropertyDetailScreen(property: p)),
         );
+
+        if (changed == true && mounted) {
+          await loadPropertiesWithRatings();
+          await loadHomepageRecommendations();
+          setState(() {});
+        }
       },
       child: Container(
         width: 180,

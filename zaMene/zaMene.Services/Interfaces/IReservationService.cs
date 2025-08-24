@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using zaMene.Model.Entity;
 using zaMene.Model.SearchObjects;
 using zaMene.Model.ViewModel;
+using zaMene.Model.ViewModels;
 
 namespace zaMene.Services.Interface
 {
@@ -15,6 +16,6 @@ namespace zaMene.Services.Interface
         Task<IEnumerable<Reservation>> GetActiveReservationsByPropertyId(int propertyId);
         Task<Reservation> CreateReservation(Reservation reservation);
         Task<List<ReservationUserDto>> GetMyReservations(int userId);
-
+        Task<List<ReservationAdminDetailDto>> GetAllDetailedAsync(ReservationSearchObject search);
     }
 }

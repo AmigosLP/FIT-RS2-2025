@@ -18,7 +18,6 @@ class FavoriteProvider extends ChangeNotifier {
     };
   }
 
-  /// Učitaj moje favorite sa backenda (GET /api/Favorite/mine)
   Future<void> syncFromServer() async {
     final res = await http.get(Uri.parse('$_base/api/Favorite/mine'), headers: _headers());
     if (res.statusCode == 200) {
@@ -32,8 +31,6 @@ class FavoriteProvider extends ChangeNotifier {
     }
   }
 
-  /// Toggle (POST /api/Favorite/toggle)
-  /// vraća novi status (true ako je postao favorite, false ako je uklonjen)
   Future<bool> toggle(int propertyId) async {
     final body = json.encode({'propertyID': propertyId});
     final res = await http.post(Uri.parse('$_base/api/Favorite/toggle'), headers: _headers(), body: body);

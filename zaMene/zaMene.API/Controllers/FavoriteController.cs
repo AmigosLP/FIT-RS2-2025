@@ -20,7 +20,7 @@ public class FavoriteController : BaseCRUDController<Favorite, FavoriteSearchObj
         _service = service;
     }
 
-
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpGet("mine")]
     public IActionResult GetMyFavorites()
     {
@@ -32,17 +32,16 @@ public class FavoriteController : BaseCRUDController<Favorite, FavoriteSearchObj
         return Ok(list);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("toggle")]
     public async Task<IActionResult> Toggle([FromBody] FavoriteDto dto)
     {
         if (dto == null) return BadRequest("Prazan zahtjev.");
 
-        // Ako želiš koristiti userId iz tokena umjesto iz body-ja:
         var userId = AuthHelper.GetUserIdFromClaimsPrincipal(User);
         if (userId == null) return Unauthorized();
         dto.UserID = userId.Value;
 
-        // provjeri postoji li
         var existing = _service.Search(new FavoriteSearchObject
         {
             UserID = dto.UserID,
@@ -61,6 +60,7 @@ public class FavoriteController : BaseCRUDController<Favorite, FavoriteSearchObj
         }
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpDelete("by")]
     public async Task<IActionResult> DeleteByUserProperty([FromQuery] int userId, [FromQuery] int propertyId)
     {

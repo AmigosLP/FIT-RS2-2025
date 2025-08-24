@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using zaMene.Model.Entity;
 using zaMene.Model.Enums;
 using zaMene.Model.SearchObjects;
 using zaMene.Model.ViewModel;
+using zaMene.Model.ViewModels;
 using zaMene.Services.Interface;
 
 namespace zaMene.Services.Service
@@ -100,5 +102,45 @@ namespace zaMene.Services.Service
             return result;
         }
 
+        public async Task<List<ReservationAdminDetailDto>> GetAllDetailedAsync(ReservationSearchObject search)
+        {
+ 
+            var q = _context.Reservations
+                .Include(r => r.Property).ThenInclude(p => p.Images)
+                .Include(r => r.Property).ThenInclude(p => p.Agent)
+                .Include(r => r.User)
+                .AsQueryable();
+
+            q = q.OrderByDescending(r => r.StartDate);
+            var totalCount = await q.CountAsync();
+
+
+            var list = await q.ToListAsync();
+
+            var result = list.Select(r => new ReservationAdminDetailDto
+            {
+                ReservationID = r.ReservationID,
+                PropertyID = r.PropertyID,
+
+                UserID = r.UserID,
+                Username = r.User?.Username,
+                Email = r.User?.Email,
+
+                StartDate = r.StartDate,
+                EndDate = r.EndDate,
+                Status = r.Status,
+
+                Title = r.Property?.Title,
+                City = r.Property?.City,
+                Price = r.Property?.Price ?? 0,
+                Description = r.Property?.Description,
+                ImageUrls = r.Property?.Images?.Select(i => i.ImageUrl).ToList() ?? new List<string>(),
+
+                AgentFullName = r.Property?.Agent?.Username,
+                AgentPhoneNumber = r.Property?.Agent?.Phone,
+            }).ToList();
+
+            return result;
+        }
     }
 }

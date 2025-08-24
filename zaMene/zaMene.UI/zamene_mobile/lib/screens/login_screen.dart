@@ -18,12 +18,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _passwordVisible = false;
 
   Future<void> login() async {
-    final username = _usernameController.text;
+    final username = _usernameController.text.trim();
     final password = _passwordController.text;
 
-    setState(() {
-      _loading = true;
-    });
+    if (username.isEmpty || password.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => const AlertDialog(
+          title: Text("Obavještenje"),
+          content: Text("Unesite korisničko ime i lozinku."),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
 
     try {
       final user = await UserService().login(username, password);
@@ -32,16 +41,43 @@ class _LoginScreenState extends State<LoginScreen> {
       AuthProvider.password = password;
       AuthProvider.displayName = "${user['firstName']} ${user['lastName']}";
 
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } catch (e) {
+      final raw = e.toString().replaceFirst('Exception: ', '').toLowerCase();
+
+      String message;
+      if (raw.contains('unauthorized') ||
+          raw.contains('401') ||
+          raw.contains('invalid') ||
+          raw.contains('wrong') ||
+          raw.contains('incorrect') ||
+          raw.contains('not found') ||
+          raw.contains('neisprav') ||
+          raw.contains('pogreš') ||
+          raw.contains('netačn')) {
+        message = "Pogrešno korisničko ime ili lozinka.";
+        _passwordController.clear();
+      } else if (raw.contains('network') ||
+          raw.contains('socket') ||
+          raw.contains('timed out') ||
+          raw.contains('timeout') ||
+          raw.contains('connection')) {
+        message =
+            "Mrežna greška ili server trenutno nije dostupan. Pokušajte ponovo.";
+      } else {
+        message = "Došlo je do greške pri prijavi. Pokušajte ponovo.";
+      }
+
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Greška"),
-          content: Text(e.toString()),
+          content: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -51,9 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -86,6 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: "Korisničko ime",
                     prefixIcon: Icon(Icons.person),
                   ),
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 20),
                 TextField(
@@ -98,13 +133,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       icon: Icon(
                         _passwordVisible ? Icons.visibility : Icons.visibility_off,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _passwordVisible = !_passwordVisible;
-                        });
-                      },
+                      onPressed: () => setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      }),
                     ),
                   ),
+                  onSubmitted: (_) => login(),
                 ),
                 const SizedBox(height: 30),
                 _loading

@@ -49,6 +49,8 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   pdf: ^3.10.4
   printing: ^5.14.2
+  window_manager: ^0.5.1
+  file_selector: ^0.8.0
 
 dev_dependencies:
   flutter_test:

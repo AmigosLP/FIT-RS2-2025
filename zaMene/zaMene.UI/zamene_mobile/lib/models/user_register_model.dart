@@ -5,6 +5,7 @@ class UserRegisterModel {
   final String password;
   final String username;
   final String gender;
+  final String? phone;
 
   UserRegisterModel({
     required this.firstName,
@@ -12,7 +13,8 @@ class UserRegisterModel {
     required this.email,
     required this.password,
     required this.username,
-    required this.gender
+    required this.gender,
+    required this.phone
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +23,7 @@ class UserRegisterModel {
         'email': email,
         'password': password,
         'username': username,
-        'gender': gender
+        'gender': gender,
+        'phone': phone
       };
 }

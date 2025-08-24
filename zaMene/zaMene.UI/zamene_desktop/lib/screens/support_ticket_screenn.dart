@@ -1,4 +1,3 @@
-// lib/screens/support_screen.dart
 import 'package:flutter/material.dart';
 import 'package:zamene_desktop/models/support_ticket_model.dart';
 import 'package:zamene_desktop/providers/admin_support_provider.dart';

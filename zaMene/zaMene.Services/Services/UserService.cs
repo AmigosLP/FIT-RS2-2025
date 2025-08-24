@@ -115,6 +115,8 @@ namespace zaMene.Services.Service
 
         public async Task<bool> Register(UserDTO request)
         {
+            if (string.IsNullOrWhiteSpace(request.Phone) || !IsValidPhone(request.Phone))
+                throw new Exception("Telefon nije u ispravnom formatu.");
 
             if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
                 throw new Exception("Ime i prezime su obavezni.");
@@ -205,12 +207,10 @@ namespace zaMene.Services.Service
                 if (string.IsNullOrWhiteSpace(dto.OldPassword))
                     throw new Exception("Stara lozinka je obavezna za promjenu lozinke.");
 
-                // Provjera stare lozinke
                 bool isOldPasswordCorrect = VerifyPassword(dto.OldPassword, user.PasswordHash);
                 if (!isOldPasswordCorrect)
                     throw new Exception("Stara lozinka nije ispravna.");
 
-                // Postavljanje nove lozinke (hashirane)
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             }
 
@@ -228,6 +228,14 @@ namespace zaMene.Services.Service
                 }
 
                 user.ProfileImagePath = $"/uploads/{fileName}";
+            }
+
+            if (dto.Phone != null)
+            {
+                if (!string.IsNullOrWhiteSpace(dto.Phone) && !IsValidPhone(dto.Phone))
+                    throw new Exception("Telefon nije u ispravnom formatu.");
+
+                user.Phone = dto.Phone;
             }
 
             await _context.SaveChangesAsync();
@@ -277,8 +285,34 @@ namespace zaMene.Services.Service
                 Email = userEntity.Email,
                 FirstName = userEntity.FirstName,
                 LastName = userEntity.LastName,
-                ProfileImageUrl = $"{baseUrl}/uploads/{fileName}"
+                ProfileImageUrl = $"{baseUrl}/uploads/{fileName}",
+                Phone = userEntity.Phone
             };
+        }
+
+        public async Task RemoveProfileImageAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                throw new Exception("Korisnik nije pronađen.");
+
+            if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
+            {
+                try
+                {
+                    var relative = user.ProfileImagePath.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar);
+                    var fullPath = Path.Combine(_environment.WebRootPath, relative);
+                    if (File.Exists(fullPath))
+                        File.Delete(fullPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Neuspješno brisanje profilne slike sa diska.");
+                }
+            }
+
+            user.ProfileImagePath = null;
+            await _context.SaveChangesAsync();
         }
 
         public bool VerifyPassword(string password, string hashedPassword)
@@ -337,7 +371,18 @@ namespace zaMene.Services.Service
                    password.Any(char.IsUpper) &&
                    password.Any(char.IsLower) &&
                    password.Any(char.IsDigit) &&
-                   password.Any(c => !char.IsLetterOrDigit(c)); // poseban karakter
+                   password.Any(c => !char.IsLetterOrDigit(c));
+        }
+
+        private bool IsValidPhone(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return false;
+
+            if (phone.Count(c => c == '+') > 1) return false;
+            if (phone.Contains('+') && phone.IndexOf('+') != 0) return false;
+
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            return digits.Length >= 8 && digits.Length <= 15;
         }
 
     }

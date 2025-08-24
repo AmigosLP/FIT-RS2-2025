@@ -29,7 +29,7 @@ class _NewSupportTicketScreenState extends State<NewSupportTicketScreen> {
         message: _msgCtrl.text.trim(),
       );
       if (!mounted) return;
-      Navigator.pop(context, true); // da profil screen može pokazati “uspjeh”
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

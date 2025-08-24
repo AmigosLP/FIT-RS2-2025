@@ -17,5 +17,7 @@ namespace zaMene.Model.ViewModel
         [RegularExpression("Muško|Žensko", ErrorMessage = "Izaberite muški ili ženski spol.")]
         public string Gender { get; set; }
         public string Password { get; set; }
+
+        public string Phone { get; set; }
     }
 }

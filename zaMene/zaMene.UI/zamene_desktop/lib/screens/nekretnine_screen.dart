@@ -112,7 +112,6 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
         filteredPonude = List.from(topPonude);
       });
     } catch (e) {
-      // ignore: avoid_print
       print('Greška pri dohvaćanju nekretnina: $e');
     }
   }
@@ -208,7 +207,7 @@ class _NekretnineScreenState extends State<NekretnineScreen> {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 3 / 3,
+                    childAspectRatio: 0.95,
                     children: filteredPonude.map((ponuda) {
                       return Card(
                         elevation: 5,

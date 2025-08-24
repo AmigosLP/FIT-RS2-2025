@@ -1,4 +1,3 @@
-// lib/services/admin_support_service.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -19,7 +18,6 @@ class AdminSupportService {
     };
   }
 
-  /// Helper: backend nekad vrati List, a nekad objekat sa resultList/items/data...
   List<dynamic> _extractList(dynamic decoded) {
     if (decoded is List) return decoded;
     if (decoded is Map<String, dynamic>) {
@@ -31,15 +29,12 @@ class AdminSupportService {
     return const [];
   }
 
-  /// Ostavljen isti naziv koji koristiš na ekranu.
-  /// Filtriranje po statusu i subject-u.
   Future<List<SupportTicketModel>> getTickets({bool? resolved, String? subject}) async {
     final headers = await _authHeader();
 
     final qp = <String, String>{};
     if (resolved != null) qp['IsResolved'] = resolved.toString();
     if (subject != null && subject.trim().isNotEmpty) qp['Subject'] = subject.trim();
-    // Ne šaljemo "Search" parametar (imao je 400).
 
     final uri = Uri.parse("$_baseUrl/api/SupportTicket")
         .replace(queryParameters: qp.isEmpty ? null : qp);
@@ -58,7 +53,6 @@ class AdminSupportService {
         .toList();
   }
 
-  /// Ostavljen isti naziv koji već koristiš za slanje odgovora.
   Future<bool> respond({
     required int ticketId,
     required String responseText,
@@ -79,7 +73,6 @@ class AdminSupportService {
     return true;
   }
 
-  /// NOVO: metoda koju tvoj UI već zove kod toggle-a "Riješen".
   Future<bool> updateTicket({
     required int ticketId,
     required bool isResolved,
@@ -89,7 +82,6 @@ class AdminSupportService {
     final uri = Uri.parse("$_baseUrl/api/SupportTicket/$ticketId");
     final body = jsonEncode({
       "isResolved": isResolved,
-      // response ostavljamo nedirnut (null) – backend Update prima partial DTO
     });
 
     final res = await http.put(uri, headers: headers, body: body);

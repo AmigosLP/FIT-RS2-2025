@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   final PropertyStatisticsService _service = PropertyStatisticsService();
   List<PropertyStatisticsModel> stats = [];
   bool isLoading = true;
+
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -40,45 +43,97 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     }
   }
 
- void _exportAsPDF() async {
-  final pdf = pw.Document();
+  Future<void> _exportAsPDF() async {
+    setState(() => _isExporting = true);
+    try {
+      final pdf = pw.Document();
 
-  final fontData = await rootBundle.load('assets/NotoSans-Regular.ttf');
-  final ttf = pw.Font.ttf(fontData);
+      final fontData = await rootBundle.load('assets/NotoSans-Regular.ttf');
+      final ttf = pw.Font.ttf(fontData);
 
-  final brojStanova = brojStanovaPoGradu();
-  final prosjekOcjena = prosjekOcjenaPoGradu();
+      final brojStanova = brojStanovaPoGradu();
+      final prosjekOcjena = prosjekOcjenaPoGradu();
 
-  pdf.addPage(
-    pw.MultiPage(
-      build: (context) => [
-        pw.Text('Izvještaj o statistici stanova', style: pw.TextStyle(font: ttf, fontSize: 22)),
-        pw.SizedBox(height: 20),
-        pw.Text('Najskuplji stan: ${najskupljiStan()}', style: pw.TextStyle(font: ttf)),
-        pw.Text('Najviše rezervacija: ${najviseRezervacija()}', style: pw.TextStyle(font: ttf)),
-        pw.Text('Top ponude: ${topPonude()}', style: pw.TextStyle(font: ttf)),
-        pw.SizedBox(height: 20),
-        pw.Text('Broj stanova po gradu:', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
-        pw.Column(
-          children: brojStanova.entries.map((e) =>
-            pw.Text('${e.key}: ${e.value.toStringAsFixed(0)}', style: pw.TextStyle(font: ttf))).toList()
+      pdf.addPage(
+        pw.MultiPage(
+          build: (context) => [
+            pw.Text('Izvještaj o statistici stanova',
+                style: pw.TextStyle(font: ttf, fontSize: 22)),
+            pw.SizedBox(height: 20),
+            pw.Text('Najskuplji stan: ${najskupljiStan()}',
+                style: pw.TextStyle(font: ttf)),
+            pw.Text('Najviše rezervacija: ${najviseRezervacija()}',
+                style: pw.TextStyle(font: ttf)),
+            pw.Text('Top ponude: ${topPonude()}',
+                style: pw.TextStyle(font: ttf)),
+            pw.SizedBox(height: 20),
+            pw.Text('Broj stanova po gradu:',
+                style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
+            ...brojStanova.entries.map((e) => pw.Text(
+                '${e.key}: ${e.value.toStringAsFixed(0)}',
+                style: pw.TextStyle(font: ttf))),
+            pw.SizedBox(height: 20),
+            pw.Text('Prosječna ocjena po gradu:',
+                style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
+            ...prosjekOcjena.entries.map((e) => pw.Text(
+                '${e.key}: ${e.value.toStringAsFixed(2)}',
+                style: pw.TextStyle(font: ttf))),
+          ],
         ),
-        pw.SizedBox(height: 20),
-        pw.Text('Prosječna ocjena po gradu:', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold)),
-        pw.Column(
-          children: prosjekOcjena.entries.map((e) =>
-            pw.Text('${e.key}: ${e.value.toStringAsFixed(2)}', style: pw.TextStyle(font: ttf))).toList()
-        ),
-      ],
-    ),
-  );
+      );
 
-  final file = File('izvjestaj.pdf');
-  await file.writeAsBytes(await pdf.save());
+      final bytes = await pdf.save();
 
-  print("PDF uspješno spremljen: ${file.path}");
-}
+      final suggested =
+          'Dashboard_izvjestaj_${DateTime.now().toIso8601String().split('T').first}.pdf';
+      final path = await getSavePath(
+        suggestedName: suggested,
+        acceptedTypeGroups: [
+          const XTypeGroup(label: 'PDF', extensions: ['pdf'])
+        ],
+      );
 
+      if (path == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Export otkazan'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      var finalPath = path;
+      if (!finalPath.toLowerCase().endsWith('.pdf')) {
+        finalPath = '$finalPath.pdf';
+      }
+
+      final file = File(finalPath);
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF spremljen: $finalPath'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri exportu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,15 +157,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             "Dashboard i statistika stanova",
             style: TextStyle(fontSize: 18),
           ),
-
           const SizedBox(height: 12),
 
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
-              onPressed: _exportAsPDF,
-              icon: const Icon(Icons.picture_as_pdf),
-              label: const Text("Exportuj izvještaj"),
+              onPressed: _isExporting ? null : _exportAsPDF,
+              icon: _isExporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
+              label: Text(_isExporting ? "Exportujem..." : "Exportuj izvještaj"),
             ),
           ),
 
@@ -120,19 +180,26 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             spacing: 16,
             runSpacing: 16,
             children: [
-              _buildInfoCard(Icons.monetization_on, "Najskuplji stan", najskupljiStan()),
-              _buildInfoCard(Icons.star, "Top ponuda", topPonude()),
-              _buildInfoCard(Icons.hotel, "Najviše rezervacija", najviseRezervacija()),
+              _buildInfoCard(Icons.monetization_on, "Najskuplji stan",
+                  najskupljiStan()),
+              _buildInfoCard(
+                  Icons.star, "Top ponuda", topPonude()),
+              _buildInfoCard(Icons.hotel, "Najviše rezervacija",
+                  najviseRezervacija()),
             ],
           ),
+
           const SizedBox(height: 30),
+
           const Text(
             "Broj stanova po gradu",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           _buildChart("Broj stanova po gradu", brojStanovaPoGradu()),
+
           const SizedBox(height: 30),
+
           const Text(
             "Prosječna ocjena po gradu",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -165,7 +232,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                             fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 6),
                     Text(value,
-                        style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black87)),
                   ],
                 ),
               )
@@ -182,12 +250,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       child: BarChart(
         BarChartData(
           barGroups: data.entries.toList().asMap().entries.map((entry) {
-            int index = entry.key;
-            double value = entry.value.value;
+            final index = entry.key;
+            final value = entry.value.value;
+
             return BarChartGroupData(
               x: index,
               barRods: [
-                BarChartRodData(toY: value, color: Colors.blue, width: 20),
+                BarChartRodData(
+                  toY: value,
+                  color: Colors.blue,
+                  width: 20,
+                ),
               ],
             );
           }).toList(),
@@ -214,7 +287,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 showTitles: true,
                 reservedSize: 40,
                 getTitlesWidget: (value, meta) {
-                  int index = value.toInt();
+                  final index = value.toInt();
                   if (index < data.length) {
                     return SideTitleWidget(
                       axisSide: meta.axisSide,
@@ -225,7 +298,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                       ),
                     );
                   }
-                  return Container();
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -238,7 +311,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Map<String, double> brojStanovaPoGradu() {
-    Map<String, int> counts = {};
+    final Map<String, int> counts = {};
     for (var s in stats) {
       counts[s.city] = (counts[s.city] ?? 0) + 1;
     }
@@ -247,13 +320,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   String najskupljiStan() {
     if (stats.isEmpty) return "Nema podataka";
-    final najskuplji = stats.reduce((a, b) => a.viewCount > b.viewCount ? a : b);
+    final najskuplji =
+        stats.reduce((a, b) => a.viewCount > b.viewCount ? a : b);
     return "${najskuplji.title} (${najskuplji.viewCount} pregleda)";
   }
 
   String najviseRezervacija() {
     if (stats.isEmpty) return "Nema podataka";
-    final najvise = stats.reduce((a, b) => a.totalReservation > b.totalReservation ? a : b);
+    final najvise = stats
+        .reduce((a, b) => a.totalReservation > b.totalReservation ? a : b);
     return "${najvise.title} (${najvise.totalReservation} rezervacija)";
   }
 
@@ -263,7 +338,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Map<String, double> prosjekOcjenaPoGradu() {
-    Map<String, List<double>> gradOcjene = {};
+    final Map<String, List<double>> gradOcjene = {};
     for (var s in stats) {
       gradOcjene.putIfAbsent(s.city, () => []).add(s.averageRating);
     }

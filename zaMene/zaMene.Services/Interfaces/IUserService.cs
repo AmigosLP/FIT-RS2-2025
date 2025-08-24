@@ -20,7 +20,7 @@ namespace zaMene.Services.Interface
         Task UpdateUserProfileAsync(int userId, UpdateUserProfileDto dto);
         Task<UserProfileDto> GetCurrentUserProfile(ClaimsPrincipal user);
         Task ChangePassword(int userId, ChangePasswordDto dto);
-
+        Task RemoveProfileImageAsync(int userId);
     }
 }
 

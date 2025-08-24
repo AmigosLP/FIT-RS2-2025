@@ -18,7 +18,7 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
     public SupportTicketController(ISupportTicketService service) : base(service)
         => _service = service;
 
-    // Ako želiš da UserID uvijek dođe iz tokena:
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("create")]
     public IActionResult CreateForCurrentUser([FromBody] SupportTicketDto dto)
     {
@@ -30,6 +30,7 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
         return Ok(created);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpGet("mine")]
     public async Task<IActionResult> Mine([FromQuery] bool? resolved)
     {
@@ -40,6 +41,7 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
         return Ok(list);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("{id}/respond")]
     public async Task<IActionResult> Respond(int id, [FromBody] RespondRequest body)
     {
@@ -50,6 +52,7 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
         return Ok(updated);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("{id}/resolve")]
     public async Task<IActionResult> Resolve(int id)
     {
@@ -57,6 +60,7 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
         return Ok(updated);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("{id}/reopen")]
     public async Task<IActionResult> Reopen(int id)
     {
@@ -64,8 +68,8 @@ public class SupportTicketController : BaseCRUDController<SupportTicket, Support
         return Ok(updated);
     }
 
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("support-tickets/{id}/respond")]
-    [Authorize]
     public async Task<IActionResult> Respond(int id, [FromBody] RespondToTicketRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Response))

@@ -11,7 +11,6 @@ class SupportTicketService {
         'Authorization': 'Bearer ${AuthProvider.token}',
       };
 
-  // POST /create — server čita UserID iz tokena
   Future<SupportTicketModel> createTicket({
     required String subject,
     required String message,
@@ -30,7 +29,6 @@ class SupportTicketService {
     return SupportTicketModel.fromJson(jsonMap);
   }
 
-  // GET /mine — lista tiketa trenutnog usera (iz tokena)
   Future<List<SupportTicketModel>> getMyTickets() async {
     final resp = await http.get(Uri.parse('$baseUrl/mine'), headers: _headers());
 

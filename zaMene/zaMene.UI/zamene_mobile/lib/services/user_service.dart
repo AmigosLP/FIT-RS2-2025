@@ -141,6 +141,7 @@ class UserService {
     String? lastName,
     String? username,
     String? email,
+    String? phone,
     String? password,
     File? profileImage,
     required int userId,
@@ -162,6 +163,7 @@ class UserService {
     request.fields['LastName'] = lastName ?? '';
     request.fields['Username'] = username ?? '';
     request.fields['Email'] = email ?? '';
+    request.fields['Phone'] = phone ?? '';
     request.fields['Password'] = password ?? '';
 
 
@@ -189,5 +191,26 @@ class UserService {
       "Content-Type": "application/json",
       "Authorization": "Bearer ${AuthProvider.token}",
     };
+  }
+
+ Future<void> removeProfileImage() async {
+    if (AuthProvider.token == null) {
+      final storedToken = await _storage.read(key: 'jwt');
+      if (storedToken != null) {
+        AuthProvider.setToken(storedToken);
+      } else {
+        throw Exception("Token nije pronađen");
+      }
+    }
+
+    final url = Uri.parse("${_baseUrl}api/Users/profile-image");
+    final res = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer ${AuthProvider.token}'},
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception("Greška pri uklanjanju slike (${res.statusCode}): ${res.body}");
+    }
   }
 }

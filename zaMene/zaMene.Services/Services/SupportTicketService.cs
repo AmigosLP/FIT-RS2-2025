@@ -28,10 +28,7 @@ namespace zaMene.Services.Service
 
         public override void BeforeInsert(SupportTicketDto request, SupportTicket entity)
         {
-            // Ako želiš forsirati UTC:
             entity.CreatedAt = DateTime.UtcNow;
-            // Ako želiš da servis može “pregaziti” UserID iz DTO-a
-            // (npr. u kontroleru ga postaviš iz tokena), ovdje ništa više ne treba.
             base.BeforeInsert(request, entity);
         }
 
@@ -72,8 +69,6 @@ namespace zaMene.Services.Service
                 Message = response.Length > 200 ? response.Substring(0, 200) + "..." : response,
                 Type = "support",
                 CreatedAt = DateTime.UtcNow,
-                // Ako dodaš polje u model/migraciji:
-                // RelatedTicketId = entity.SupportTicketID
             });
 
             await _context.SaveChangesAsync();

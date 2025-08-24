@@ -91,7 +91,6 @@ class _RecenzijeScreenState extends State<RecenzijeScreen> {
                       setState(() {
                         currentRating = index + 1;
                       });
-                      // Trigger rebuild of dialog content
                       (context as Element).markNeedsBuild();
                     },
                   );

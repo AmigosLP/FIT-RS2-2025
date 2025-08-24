@@ -33,33 +33,22 @@ class NekretnineService {
 
     request.headers['Authorization'] = 'Bearer $token';
 
-    // --- Normalizuj numerička polja (decimalna tačka) ---
     String normNum(String v) => v.replaceAll(',', '.').trim();
     if (fields.containsKey('Price')) fields['Price'] = normNum(fields['Price']!);
     if (fields.containsKey('Area')) fields['Area'] = normNum(fields['Area']!);
-    // RoomCount je int, ali ostavi kako je (server će parsirati)
 
-    // --- Tekstualna polja ---
     request.fields.addAll(fields);
 
-    // --- KLJUČNO: DeleteImageIds kao indeksirana polja, NE kao JSON! ---
     for (int i = 0; i < deleteImageIds.length; i++) {
       request.fields['DeleteImageIds[$i]'] = deleteImageIds[i].toString();
     }
 
-    // --- Nove slike ---
     for (final f in newImages) {
       request.files.add(await http.MultipartFile.fromPath('NewImages', f.path));
     }
 
     final response = await request.send();
     final body = await response.stream.bytesToString();
-
-    // Debug (po želji):
-    // print('PUT $uri');
-    // print('FIELDS: ${request.fields}');
-    // print('STATUS: ${response.statusCode}');
-    // print('BODY: $body');
 
     return response.statusCode >= 200 && response.statusCode < 300;
   }

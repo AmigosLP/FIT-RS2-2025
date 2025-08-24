@@ -91,7 +91,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Naslov + status
                         Row(
                           children: [
                             Expanded(

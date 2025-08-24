@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:zamene_mobile/models/my_reservations_model.dart';
 import 'package:zamene_mobile/models/property_model.dart';
@@ -13,17 +14,27 @@ class MyReservationsScreen extends StatefulWidget {
 
 class _MyReservationsScreenState extends State<MyReservationsScreen> {
   late Future<List<MyReservations>> futureReservations;
+  Timer? _statusTicker;
 
   @override
   void initState() {
     super.initState();
     futureReservations = ReservationService.getMyReservations();
+    _statusTicker = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusTicker?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final Color primaryColor = Theme.of(context).colorScheme.primary;
-    final Color whiteColor = Colors.white;
+    const Color whiteColor = Colors.white;
 
     return Scaffold(
       appBar: AppBar(
@@ -64,6 +75,9 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
             itemBuilder: (context, index) {
               final r = reservations[index];
 
+              final computed = _computedStatus(r);
+              final pretty = _prettyStatus(computed);
+
               return Material(
                 elevation: 2,
                 borderRadius: BorderRadius.circular(16),
@@ -71,7 +85,6 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
-                    // -- Sigurna konverzija liste URL-ova u List<String>
                     List<String> _asStringList(dynamic v) {
                       if (v == null) return <String>[];
                       if (v is List<String>) return v;
@@ -88,9 +101,8 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                       propertyID: r.propertyID,
                       title: r.propertyTitle,
                       description: r.propertyDescription,
-                      price: r.propertyPrice, // double?
+                      price: r.propertyPrice,
                       city: r.propertyCity,
-                      // polja koja nemaš u rezervaciji ostavi null/empty
                       address: null,
                       averageRating: null,
                       agentFullName: r.propertyAgentName,
@@ -122,30 +134,26 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.location_on,
-                                size: 18, color: Colors.grey),
+                            const Icon(Icons.location_on, size: 18, color: Colors.grey),
                             const SizedBox(width: 6),
                             Text(
                               r.propertyCity,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
+                              style: const TextStyle(fontSize: 14, color: Colors.grey),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            const Icon(Icons.date_range,
-                                size: 18, color: Color.fromARGB(255, 179, 165, 165)),
+                            const Icon(Icons.date_range, size: 18, color: Color.fromARGB(255, 179, 165, 165)),
                             const SizedBox(width: 6),
                             Text(
                               '${r.startDate.toLocal().toString().split(" ")[0]} - ${r.endDate.toLocal().toString().split(" ")[0]}',
                               style: TextStyle(
-                                  fontSize: 14,
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.w600),
+                                fontSize: 14,
+                                color: primaryColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -154,14 +162,13 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                               decoration: BoxDecoration(
-                                color: _getStatusColor(r.status),
+                                color: _getStatusColor(computed),
                                 borderRadius: BorderRadius.circular(30),
                               ),
                               child: Text(
-                                r.status,
+                                pretty,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -190,13 +197,52 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
+  String _computedStatus(MyReservations r) {
+    final now = DateTime.now();
+    final end = r.endDate.toLocal();
+    final s = r.status.toLowerCase().trim();
+
+    final isActive = s == 'aktivno' || s == 'active' || s == 'aktivan' || s == 'aktivna';
+
+    if (isActive && !end.isAfter(now)) {
+      return 'zavrseno';
+    }
+    if (s == 'završeno') return 'zavrseno';
+    return s;
+  }
+
+  String _prettyStatus(String s) {
+    switch (s.toLowerCase().trim()) {
       case 'aktivno':
+      case 'active':
+      case 'aktivan':
+      case 'aktivna':
+        return 'Aktivno';
+      case 'otkazano':
+      case 'cancelled':
+        return 'Otkazano';
+      case 'zavrseno':
+      case 'završeno':
+      case 'finished':
+        return 'Završeno';
+      default:
+        return s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase().trim()) {
+      case 'aktivno':
+      case 'active':
+      case 'aktivan':
+      case 'aktivna':
         return Colors.green.shade600;
       case 'otkazano':
+      case 'cancelled':
         return Colors.red.shade600;
       case 'zavrseno':
+      case 'završeno':
+      case 'finished':
         return Colors.grey.shade600;
       default:
         return Colors.blue.shade400;

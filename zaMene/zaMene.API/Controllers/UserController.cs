@@ -150,6 +150,16 @@ namespace zaMene.API.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpDelete("profile-image")]
+        public async Task<IActionResult> RemoveProfileImage()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userIdStr) || !int.TryParse(userIdStr, out var userId))
+                return Unauthorized();
 
+            await _userService.RemoveProfileImageAsync(userId);
+            return Ok(new { message = "Profilna slika uklonjena." });
+        }
     }
 }

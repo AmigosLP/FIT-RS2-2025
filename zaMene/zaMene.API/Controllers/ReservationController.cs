@@ -101,5 +101,12 @@ namespace zaMene.Controllers
             return Ok(myReservations);
         }
 
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet("all-detailed")]
+        public async Task<IActionResult> GetAllDetailed([FromQuery] ReservationSearchObject search)
+        {
+            var data = await _reservationService.GetAllDetailedAsync(search);
+            return Ok(data);
+        }
     }
 }

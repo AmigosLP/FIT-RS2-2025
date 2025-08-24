@@ -78,7 +78,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Provider.of<NotificationProvider>(context, listen: false).decrementUnreadCount();
 
       setState(() {
-        // ukloni notifikaciju iz liste
         _notifications.removeWhere((n) => n.id == id);
       });
 

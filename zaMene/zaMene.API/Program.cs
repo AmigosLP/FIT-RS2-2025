@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+ï»¿using Microsoft.EntityFrameworkCore;
 using zaMene.Model;
 using MapsterMapper;
 using zaMene.API.Filters;
@@ -14,6 +14,8 @@ using zaMene.Services.Interface;
 using zaMene.Services.Service;
 using zaMene.Services.Interfaces;
 using zaMene.Services.Services;
+using System.Net;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +44,8 @@ builder.Services.AddScoped<ICityService, CityService>();
 builder.Services.AddScoped<ICountryService, CountryService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<ISupportTicketService, SupportTicketService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
 builder.Services.AddTransient<DatabaseSeeder>();
 
 builder.Services.AddHttpContextAccessor();
@@ -128,10 +132,9 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// File upload limits
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104_857_600; // 100 MB
+    options.MultipartBodyLengthLimit = 104_857_600;
 });
 
 var app = builder.Build();
@@ -154,15 +157,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Automatski pokretanje migracija
 using (var scope = app.Services.CreateScope())
 {
     var dataContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dataContext.Database.Migrate();
 
-    // Opcionalno: seedanje baze ako želiš
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-    await seeder.SeedAsync(); // ili await seeder.SeedAsync() ako async
+    await seeder.SeedAsync();
 }
 
 app.Run();

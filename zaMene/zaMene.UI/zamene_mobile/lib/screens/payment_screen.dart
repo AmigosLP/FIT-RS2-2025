@@ -230,6 +230,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     firstDay: DateTime.now(),
                     lastDay: DateTime.now().add(const Duration(days: 365)),
                     focusedDay: DateTime.now(),
+
+                    availableCalendarFormats: const {
+                      CalendarFormat.month: 'Month',
+                    },
+
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, _) {
                         final bool zauzet = isZauzet(day);

@@ -36,7 +36,7 @@ class ReviewService {
 
     Future<void> createReview(ReviewCreateModel review) async {
     final headers = createHeaders();
-    final url = Uri.parse('${baseUrl}api/review/create'); // pretpostavljam da je endpoint api/review
+    final url = Uri.parse('${baseUrl}api/review/create');
 
     final response = await http.post(
       url,
@@ -45,7 +45,6 @@ class ReviewService {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      // uspjeh, recenzija spremljena
       return;
     } else if (response.statusCode == 401) {
       throw Exception('Niste autorizirani. Molimo prijavite se.');

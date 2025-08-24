@@ -1,9 +1,9 @@
-// lib/forms/edit_property_form.dart
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:zamene_desktop/models/city_desktop_model.dart';
 import 'package:zamene_desktop/models/country_desktop_model.dart';
 import 'package:zamene_desktop/providers/city_provider.dart';
@@ -11,7 +11,7 @@ import 'package:zamene_desktop/providers/country_provider.dart';
 import 'package:zamene_desktop/providers/property_provider.dart';
 
 class UrediNekretninuForma extends StatefulWidget {
-  final Map<String, dynamic> nekretnina; // očekuje mapu sa 'slike': [{id,url}]
+  final Map<String, dynamic> nekretnina;
   final VoidCallback onUpdated;
 
   const UrediNekretninuForma({
@@ -37,17 +37,13 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
   final _secureStorage = const FlutterSecureStorage();
   final _service = NekretnineService();
 
-  // LIMIT UKUPNOG BROJA SLIKA (postojeće + nove)
   static const int _maxTotalImages = 14;
 
-  // postojeće slike + ID-jevi za brisanje
   final List<_ExistingImage> _postojeceSlike = [];
   final List<int> _deletedImageIds = [];
 
-  // nove slike
   final List<File> _noveSlike = [];
 
-  // gradovi / države
   List<CityDesktopModel> gradovi = [];
   CityDesktopModel? odabraniGrad;
   bool ucitavanjeGradova = true;
@@ -56,7 +52,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
   CountryDesktopModel? odabranaDrzava;
   bool ucitavanjeDrzava = true;
 
-  // scrolleri
   final _existingCtrl = ScrollController();
   final _newCtrl = ScrollController();
 
@@ -79,7 +74,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
     kvadraturaController =
         TextEditingController(text: (widget.nekretnina['kvadratura'] ?? '').toString());
 
-    // postojeće slike
     final raw = (widget.nekretnina['slike'] as List?) ?? [];
     for (final e in raw) {
       if (e is Map) {
@@ -189,11 +183,14 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
       return;
     }
 
+    final opisRaw = opisController.text.trim();
+    final opisSafe = opisRaw.length <= 1000 ? opisRaw : opisRaw.substring(0, 1000);
+
     final ok = await _service.updateProperty(
       propertyId: widget.nekretnina['id'] as int,
       fields: {
         'Title': nazivController.text.trim(),
-        'Description': opisController.text.trim(),
+        'Description': opisSafe,
         'Price': cijenaController.text.trim(),
         'City': odabraniGrad?.name ?? '',
         'Country': odabranaDrzava?.name ?? '',
@@ -212,7 +209,7 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nekretnina uspješno ažurirana'), backgroundColor: Colors.green),
       );
-      widget.onUpdated(); // roditelj reloađa listu; sljedeći put ćeš vidjeti postojeće + dodane
+      widget.onUpdated();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Greška prilikom ažuriranja'), backgroundColor: Colors.red),
@@ -220,14 +217,12 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
     }
   }
 
-  // pomak scroller-a
   void _scrollBy(ScrollController c, double delta) {
     if (!c.hasClients) return;
     final double target = math.max(0.0, math.min(c.offset + delta, c.position.maxScrollExtent));
     c.animateTo(target, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
   }
 
-  // odmah ukloni postojeću sliku iz UI i zapamti ID za brisanje (Undo)
   void _removeExistingAt(int index) {
     if (index < 0 || index >= _postojeceSlike.length) return;
     final removed = _postojeceSlike.removeAt(index);
@@ -250,14 +245,12 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
     );
   }
 
-  // pomoćni builder za skrol galerije s uvjetnim strelicama
   Widget _buildScroller({
     required List<Widget> tiles,
     required ScrollController controller,
     required double availableWidth,
     required Color arrowColor,
   }) {
-    // koliko tile-ova stane
     final int visible = math.max(1, (availableWidth / (_tileSize + _tileGap)).floor());
     final bool showArrows = tiles.length > visible;
 
@@ -268,7 +261,7 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
         children: [
           Scrollbar(
             controller: controller,
-            thumbVisibility: showArrows, // pokaži thumb kad ima overflow
+            thumbVisibility: showArrows,
             child: SingleChildScrollView(
               controller: controller,
               scrollDirection: Axis.horizontal,
@@ -316,7 +309,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
                 const Text('Uredi nekretninu', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
 
-                // ------- Polja -------
                 TextFormField(
                   controller: nazivController,
                   decoration: const InputDecoration(labelText: 'Naziv'),
@@ -357,12 +349,29 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
                   decoration: const InputDecoration(labelText: 'Adresa'),
                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Unesite adresu' : null,
                 ),
+
                 TextFormField(
                   controller: opisController,
-                  decoration: const InputDecoration(labelText: 'Opis'),
-                  maxLines: 3,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Unesite opis' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Opis',
+                  ),
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  minLines: 4,
+                  maxLines: 10,                  
+                  maxLength: 1000,                
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(1000),
+                  ],
+                  validator: (v) {
+                    final t = (v ?? '').trim();
+                    if (t.isEmpty) return 'Unesite opis';
+                    if (t.length > 1000) return 'Maksimalno 1000 karaktera';
+                    return null;
+                  },
                 ),
+
                 TextFormField(
                   controller: sobeController,
                   decoration: const InputDecoration(labelText: 'Broj soba'),
@@ -384,7 +393,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
 
                 const SizedBox(height: 18),
 
-                // ------- POSTOJEĆE SLIKE (samo ako ih ima) -------
                 if (hasExisting) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -442,7 +450,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
                   const SizedBox(height: 18),
                 ],
 
-                // ------- NOVE SLIKE (uvijek se prikazuju) -------
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -503,7 +510,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
 
                 const SizedBox(height: 12),
 
-                // ------- centriran "Odaberi slike" (disabled na limitu) -------
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -522,7 +528,6 @@ class _UrediNekretninuFormaState extends State<UrediNekretninuForma> {
 
                 const SizedBox(height: 18),
 
-                // ------- manji "Spremi izmjene" sa radiusom -------
                 SizedBox(
                   width: 220,
                   child: ElevatedButton(

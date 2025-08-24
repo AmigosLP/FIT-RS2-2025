@@ -1,4 +1,3 @@
-// lib/screens/master_screen.dart
 import 'package:flutter/material.dart';
 import 'package:zamene_desktop/providers/auth_provider.dart';
 import 'package:zamene_desktop/screens/dashboard_screen.dart';
@@ -18,12 +17,11 @@ class _MasterScreenState extends State<MasterScreen> {
   String _userName = "";
   int _selectedIndex = 0;
 
-  // Jedan izvor istine: naslov + ekran zajedno
   final List<({String title, Widget screen})> _tabs = const [
     (title: "Nekretnine", screen: NekretnineScreen()),
     (title: "Recenzije", screen: RecenzijeScreen()),
     (title: "Dashboard", screen: StatisticsScreen()),
-    (title: "Support", screen: SupportScreen()), // 👈 NOVO
+    (title: "Support", screen: SupportScreen()),
   ];
 
   @override
@@ -33,7 +31,7 @@ class _MasterScreenState extends State<MasterScreen> {
   }
 
   void _onNavButtonTapped(int index) {
-    if (index < 0 || index >= _tabs.length) return; // zaštita od range error-a
+    if (index < 0 || index >= _tabs.length) return;
     setState(() => _selectedIndex = index);
   }
 

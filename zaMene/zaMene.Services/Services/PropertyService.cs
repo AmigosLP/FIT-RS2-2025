@@ -21,7 +21,7 @@ namespace zaMene.Services.Service
         static object isLocked = new object();
         static ITransformer model = null;
         private readonly IWebHostEnvironment _env;
-        private readonly IHttpContextAccessor _http; // <— za apsolutne URL-ove
+        private readonly IHttpContextAccessor _http;
 
         public PropertyService(AppDbContext context, IMapper mapper, IWebHostEnvironment env, IHttpContextAccessor http)
             : base(context, mapper)
@@ -71,9 +71,7 @@ namespace zaMene.Services.Service
                 p.AgentID,
                 p.RoomCount,
                 p.Area,
-                // ✅ vraćamo i imageUrls (apsolutne)
                 imageUrls = p.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList(),
-                // ✅ i images[] sa apsolutnim url-om
                 images = p.Images.Select(i => new
                 {
                     id = i.PropertyImageID,
@@ -155,7 +153,7 @@ namespace zaMene.Services.Service
             {
                 property.PropertyID,
                 property.Title,
-                imageUrls = savedImageUrls, // ✅ odmah vraćamo apsolutne
+                imageUrls = savedImageUrls,
                 message = "Nekretnina uspješno kreirana sa slikama."
             };
         }
@@ -202,7 +200,7 @@ namespace zaMene.Services.Service
             return new
             {
                 property.PropertyID,
-                imageUrls = savedImageUrls, // ✅ apsolutne
+                imageUrls = savedImageUrls,
                 message = "Slike su uspješno dodane postojećoj nekretnini."
             };
         }
@@ -255,14 +253,14 @@ namespace zaMene.Services.Service
                 property.AgentID,
                 property.RoomCount,
                 property.Area,
-                imageUrls = property.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList(), // ✅
+                imageUrls = property.Images.Select(i => MakeAbsolute(i.ImageUrl)).ToList(),
                 images = property.Images.Select(i => new
                 {
                     id = i.PropertyImageID,
-                    url = MakeAbsolute(i.ImageUrl) // ✅
+                    url = MakeAbsolute(i.ImageUrl)
                 }).ToList(),
                 AgentFullName = property.Agent != null ? $"{property.Agent.FirstName} {property.Agent.LastName}" : null,
-                AgentImageUrl = property.Agent?.ProfileImagePath, // možeš i ovo normalizirati ako želiš: MakeAbsolute(...)
+                AgentImageUrl = property.Agent?.ProfileImagePath,
                 AgentPhoneNumber = property.Agent?.Phone
             };
         }

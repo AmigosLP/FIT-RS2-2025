@@ -1,4 +1,3 @@
-// lib/models/support_ticket_model.dart
 class SupportTicketModel {
   final int supportTicketID;
   final int userID;
@@ -29,7 +28,6 @@ class SupportTicketModel {
       return null;
     }
 
-    // int
     int _int(String a, String b) {
       final v = pick(a, b);
       if (v is int) return v;
@@ -37,7 +35,6 @@ class SupportTicketModel {
       return 0;
     }
 
-    // bool
     bool _bool(String a, String b) {
       final v = pick(a, b);
       if (v is bool) return v;
@@ -46,14 +43,12 @@ class SupportTicketModel {
       return false;
     }
 
-    // string
     String _str(String a, String b) {
       final v = pick(a, b);
       if (v is String) return v;
       return '';
     }
 
-    // date
     DateTime? _dt(String a, String b) {
       final v = pick(a, b);
       if (v is String && v.isNotEmpty) {

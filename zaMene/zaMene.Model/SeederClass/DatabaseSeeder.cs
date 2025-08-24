@@ -29,7 +29,8 @@ namespace zaMene.Services.Data
             await SeedPaymentsAsync();
             await SeedUserRolesAsync();
             await SeedReviewsAsync();
-            await SeedCountyAsync();
+            await SeedCountryAsync();
+            await SeedCategoryAsync();
         }
 
         private async Task SeedRolesAsync()
@@ -63,7 +64,6 @@ namespace zaMene.Services.Data
             }
         }
 
-
         private async Task SeedAdminUserAsync()
         {
             if (!_context.Users.Any(u => u.Email == "admin@zamene.ba"))
@@ -77,7 +77,7 @@ namespace zaMene.Services.Data
                     Email = "admin@zamene.ba",
                     PasswordHash = HashPassword("AdminZaMene22"),
                     RegistrationDate = DateTime.UtcNow,
-                    Phone = "123456789"
+                    Phone = "+38761887892"
                 };
 
 
@@ -357,7 +357,7 @@ namespace zaMene.Services.Data
                     {
                         PropertyID = 3,
                         Title = "Lijep stan u centru",
-                        Description = "Moderno opremljen stan sa svim sadržajima.",
+                        Description = "Srednje opremljen stan sa lijepim pogledom na rijeku.",
                         Price = 400.00m,
                         Address = "Ulica bb 10",
                         City = "Sarajevo",
@@ -796,7 +796,7 @@ namespace zaMene.Services.Data
             }
         }
 
-        private async Task SeedCountyAsync()
+        private async Task SeedCountryAsync()
         {
             if (!_context.Country.Any())
             {
@@ -817,6 +817,42 @@ namespace zaMene.Services.Data
                 Console.WriteLine("Country added");
 
                 command.CommandText = "SET IDENTITY_INSERT Country OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
+            }
+        }
+
+        private async Task SeedCategoryAsync()
+        {
+            if (!_context.Category.Any())
+            {
+                var categories = new List<Category>
+                {
+                    new Category { CategoryID = 1, Name = "Studio (Garsonjera)" },
+                    new Category { CategoryID = 2, Name = "Jednosoban (1.0)" },
+                    new Category { CategoryID = 3, Name = "Jedno i po (1.5)" },
+                    new Category { CategoryID = 4, Name = "Dvosoban (2.0)" },
+                    new Category { CategoryID = 5, Name = "Dva i po (2.5)" },
+                    new Category { CategoryID = 6, Name = "Trosoban (3.0)" },
+                    new Category { CategoryID = 7, Name = "Četverosoban" },
+                    new Category { CategoryID = 8, Name = "Dupleks" },
+                    new Category { CategoryID = 9, Name = "Penthouse" },
+                    new Category { CategoryID = 10, Name = "Novogradnja" },
+                    new Category { CategoryID = 11, Name = "Starogradnja" }
+
+                };
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT Category ON";
+                await command.ExecuteNonQueryAsync();
+                _context.Category.AddRange(categories);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Categories added");
+
+                command.CommandText = "SET IDENTITY_INSERT Category OFF";
                 await command.ExecuteNonQueryAsync();
                 await connection.CloseAsync();
             }

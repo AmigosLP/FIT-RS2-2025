@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:zamene_mobile/models/user_register_model.dart';
 import 'package:zamene_mobile/services/user_service.dart';
 import 'login_screen.dart';
@@ -17,30 +18,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _userNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController(); // ⬅️ NEW
 
   String _gender = "Muško";
   bool _loading = false;
-  bool _passwordVisible = false; // 👈 Dodano
+  bool _passwordVisible = false;
 
   String? _emailError;
   String? _usernameError;
   String? _nameError;
-  String? _emailFormatError;
+
+  final RegExp _nameAllowClass = RegExp(r"[A-Za-z\u00C0-\u017F \-]");
+  final RegExp _nameRegex =
+      RegExp(r"^[A-Za-z\u00C0-\u017F]+(?:[ -][A-Za-z\u00C0-\u017F]+)*$");
+
+  final RegExp _phoneAllowClass = RegExp(r"[0-9+\-\s()]");
+
+  String? _validateFirstName(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return "Unesite ime";
+    if (!_nameRegex.hasMatch(v)) {
+      return "Dozvoljena su samo slova, razmak i '-'.";
+    }
+    return null;
+  }
+
+  String? _validateLastName(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return "Unesite prezime";
+    if (!_nameRegex.hasMatch(v)) {
+      return "Dozvoljena su samo slova, razmak i '-'.";
+    }
+    return null;
+  }
+
+  bool _isValidEmail(String value) {
+    final v = value.trim();
+    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
+    return re.hasMatch(v);
+  }
+
+  String _digitsOnly(String s) => s.replaceAll(RegExp(r'\D'), '');
+
+  String? _validatePhone(String? value) {
+    final v = (value ?? '').trim();
+
+    if (v.isEmpty) return "Unesite broj telefona";
+
+    if (v.contains('+') && !v.startsWith('+')) {
+      return "Znak '+' može biti samo na početku broja.";
+    }
+    if (RegExp(r'\+').allMatches(v).length > 1) {
+      return "Znak '+' smije biti naveden samo jednom.";
+    }
+
+    final digits = _digitsOnly(v);
+    if (digits.length < 8 || digits.length > 15) {
+      return "Unesite ispravan broj (8–15 cifara).";
+    }
+
+    return null;
+  }
 
   Future<void> register() async {
     setState(() {
       _emailError = null;
       _usernameError = null;
       _nameError = null;
-      _emailFormatError = null;
     });
-
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_emailController.text.trim())) {
-      setState(() {
-        _emailFormatError = "Email nije u ispravnom formatu.";
-      });
-      return;
-    }
 
     if (!_formKey.currentState!.validate()) return;
 
@@ -51,15 +96,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       gender: _gender,
       password: _passwordController.text,
+      phone: _phoneController.text.trim(),
     );
 
-    setState(() {
-      _loading = true;
-    });
+    setState(() => _loading = true);
 
     try {
       await UserService().register(newUser);
 
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
@@ -77,14 +122,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
     } catch (e) {
-      String error = e.toString().replaceFirst("Exception: ", "");
-
+      final error = e.toString().replaceFirst("Exception: ", "");
       setState(() {
-        if (error.contains("email")) {
+        final low = error.toLowerCase();
+        if (low.contains("email")) {
           _emailError = error;
-        } else if (error.contains("korisničkim imenom")) {
+        } else if (low.contains("korisničkim imenom") ||
+            low.contains("korisničko ime") ||
+            low.contains("username")) {
           _usernameError = error;
-        } else if (error.contains("ime i prezime")) {
+        } else if (low.contains("ime i prezime")) {
           _nameError = error;
         } else {
           showDialog(
@@ -103,10 +150,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       });
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _userNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    super.dispose();
   }
 
   @override
@@ -119,6 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -128,9 +185,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       labelText: "Ime",
                       prefixIcon: Icon(Icons.person),
                     ),
-                    validator: (value) => value!.isEmpty ? "Unesite ime" : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(_nameAllowClass),
+                      LengthLimitingTextInputFormatter(50),
+                    ],
+                    validator: _validateFirstName,
                   ),
                   const SizedBox(height: 20),
+
                   TextFormField(
                     controller: _lastNameController,
                     decoration: InputDecoration(
@@ -138,9 +200,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.person_outline),
                       errorText: _nameError,
                     ),
-                    validator: (value) => value!.isEmpty ? "Unesite prezime" : null,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(_nameAllowClass),
+                      LengthLimitingTextInputFormatter(50),
+                    ],
+                    validator: _validateLastName,
                   ),
                   const SizedBox(height: 20),
+
                   TextFormField(
                     controller: _userNameController,
                     decoration: InputDecoration(
@@ -148,34 +215,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.account_circle),
                       errorText: _usernameError,
                     ),
-                    validator: (value) => value!.isEmpty ? "Unesite korisničko ime" : null,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(30),
+                    ],
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty)
+                            ? "Unesite korisničko ime"
+                            : null,
                   ),
                   const SizedBox(height: 20),
+
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: "Email",
                       prefixIcon: const Icon(Icons.email),
-                      errorText: _emailError ?? _emailFormatError,
+                      errorText: _emailError,
                     ),
-                    validator: (value) => value!.isEmpty ? "Unesite email" : null,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      final v = (value ?? '').trim();
+                      if (v.isEmpty) return "Unesite email";
+                      if (!_isValidEmail(v)) {
+                        return "Unesite ispravan email (npr. ime@domena.com).";
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 20),
+
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(
+                      labelText: "Telefon",
+                      prefixIcon: Icon(Icons.phone),
+                      hintText: "+387 62 123 456",
+                    ),
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(_phoneAllowClass),
+                      LengthLimitingTextInputFormatter(20),
+                    ],
+                    validator: _validatePhone,
+                  ),
+                  const SizedBox(height: 20),
+
                   TextFormField(
                     controller: _passwordController,
-                    obscureText: !_passwordVisible, // 👈 Dodano
+                    obscureText: !_passwordVisible,
                     decoration: InputDecoration(
                       labelText: "Lozinka",
                       prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton( // 👈 Dodano
-                        icon: Icon(
-                          _passwordVisible ? Icons.visibility : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _passwordVisible = !_passwordVisible;
-                          });
-                        },
+                      suffixIcon: IconButton(
+                        icon: Icon(_passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off),
+                        onPressed: () =>
+                            setState(() => _passwordVisible = !_passwordVisible),
                       ),
                     ),
                     validator: (value) {
@@ -190,6 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 30),
+
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -205,11 +302,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           title: const Text("Muško"),
                           value: "Muško",
                           groupValue: _gender,
-                          onChanged: (value) {
-                            setState(() {
-                              _gender = value!;
-                            });
-                          },
+                          onChanged: (value) => setState(() => _gender = value!),
                         ),
                       ),
                       Expanded(
@@ -217,16 +310,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           title: const Text("Žensko"),
                           value: "Žensko",
                           groupValue: _gender,
-                          onChanged: (value) {
-                            setState(() {
-                              _gender = value!;
-                            });
-                          },
+                          onChanged: (value) => setState(() => _gender = value!),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 30),
+
                   _loading
                       ? const CircularProgressIndicator()
                       : SizedBox(
@@ -234,10 +324,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           height: 45,
                           child: ElevatedButton(
                             onPressed: register,
-                            child: const Text(
-                              "Registruj se",
-                              style: TextStyle(fontSize: 16),
-                            ),
+                            child: const Text("Registruj se", style: TextStyle(fontSize: 16)),
                           ),
                         ),
                   const SizedBox(height: 20),
