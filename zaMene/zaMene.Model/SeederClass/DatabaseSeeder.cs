@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using zaMene.Model;
 using zaMene.Model.Entity;
@@ -26,12 +27,14 @@ namespace zaMene.Services.Data
             await SeedPropertiesAsync();
             await SeedNotificationsAsync();
             await SeedCitiesAsync();
+            await SeedReservationAsync();
             await SeedPaymentsAsync();
             await SeedUserRolesAsync();
             await SeedReviewsAsync();
             await SeedCountryAsync();
             await SeedCategoryAsync();
-            await SeedReservationAsync();
+            await SeedFavoritesAsync();
+            await SeedSupportTicketsAsync();
         }
 
         private async Task SeedRolesAsync()
@@ -875,6 +878,7 @@ namespace zaMene.Services.Data
                 {
                      new Payment
                      {
+                         PaymentID = 1,
                          ReservationID = 1,
                          Amount = 400.00m,
                          PaymentDate = DateTime.UtcNow.AddDays(-10),
@@ -883,38 +887,46 @@ namespace zaMene.Services.Data
                      },
                      new Payment
                      {
+                         PaymentID = 2,
                          ReservationID = 2,
                          Amount = 550.00m,
                          PaymentDate = DateTime.UtcNow.AddDays(-7),
-                         PaymentMethod = "Credit Card",
+                         PaymentMethod = "PayPal",
                          Status = "Completed"
                      },
                      new Payment
                      {
+                         PaymentID = 3,
                          ReservationID = 3,
                          Amount = 380.00m,
                          PaymentDate = DateTime.UtcNow.AddDays(-5),
-                         PaymentMethod = "Bank Transfer",
+                         PaymentMethod = "PayPal",
                          Status = "Pending"
                      },
                      new Payment
-                     {
+                     {   PaymentID = 4,
                          ReservationID = 4,
                          Amount = 410.00m,
                          PaymentDate = DateTime.UtcNow.AddDays(-3),
                          PaymentMethod = "PayPal",
                          Status = "Failed"
                      },
-                     new Payment
-                     {
-                         ReservationID = 5,
-                         Amount = 220.00m,
-                         PaymentDate = DateTime.UtcNow.AddDays(-1),
-                         PaymentMethod = "Credit Card",
-                         Status = "Completed"
-                     }
                 };
 
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT Payments ON";
+                await command.ExecuteNonQueryAsync();
+                _context.Payments.AddRange(payments);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Payments added");
+
+                command.CommandText = "SET IDENTITY_INSERT Payments OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
             }
         }
 
@@ -1065,6 +1077,7 @@ namespace zaMene.Services.Data
         {
             new Reservation
             {
+                ReservationID = 1,
                 UserID = 2,
                 PropertyID = 1,
                 StartDate =  new DateTime(2026, 6, 10),
@@ -1076,6 +1089,7 @@ namespace zaMene.Services.Data
 
              new Reservation
             {
+                 ReservationID = 2,
                 UserID = 3,
                 PropertyID = 4,
                 StartDate =  new DateTime(2026, 7, 10),
@@ -1087,6 +1101,7 @@ namespace zaMene.Services.Data
 
               new Reservation
             {
+                ReservationID = 3,
                 UserID = 5,
                 PropertyID = 5,
                 StartDate =  new DateTime(2026, 8, 10),
@@ -1099,6 +1114,7 @@ namespace zaMene.Services.Data
 
               new Reservation
             {
+                ReservationID = 4,
                 UserID = 6,
                 PropertyID = 6,
                 StartDate =  new DateTime(2026, 8, 20),
@@ -1110,10 +1126,101 @@ namespace zaMene.Services.Data
 
         };
 
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT Reservations ON";
+                await command.ExecuteNonQueryAsync();
                 _context.Reservations.AddRange(reservations);
                 await _context.SaveChangesAsync();
+                Console.WriteLine("Reservations added");
 
-                Console.WriteLine("Reservation added");
+                command.CommandText = "SET IDENTITY_INSERT Reservations OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
+            }
+        }
+
+        private async Task SeedFavoritesAsync()
+        {
+            if (!_context.Favorite.Any())
+            {
+                var favorites = new List<Favorite>
+            {
+                new Favorite
+                {
+                    FavoriteID = 1,
+                    UserID = 2,
+                    PropertyID = 1,
+                    CreatedAt =  new DateTime(2026, 6, 10),
+                },
+
+                  new Favorite
+                {
+                    FavoriteID = 2,
+                    UserID = 3,
+                    PropertyID = 2,
+                    CreatedAt =  new DateTime(2026, 7, 10),
+                },
+
+                  new Favorite
+                {
+                   FavoriteID = 3,
+                   UserID = 4,
+                   PropertyID = 3,
+                   CreatedAt =  new DateTime(2026, 8, 10),
+                }};
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT Favorite ON";
+                await command.ExecuteNonQueryAsync();
+                _context.Favorite.AddRange(favorites);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Favorites added");
+
+                command.CommandText = "SET IDENTITY_INSERT Favorite OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
+            }
+        }
+
+        private async Task SeedSupportTicketsAsync()
+        {
+            if (!_context.SupportTicket.Any())
+            {
+                var supportTicket = new List<SupportTicket>
+            {
+                new SupportTicket
+                {
+                    SupportTicketID = 1,
+                    UserID = 2,
+                    Subject = "Greška prilikom bukinga",
+                    Message = "Ne mogu da bukiram stan, molimo pomozite.",
+                    Response = "Zvat ćemo vas na mobilni.",
+                    IsResolved = true,
+                    CreatedAt =  new DateTime(2026, 8, 10),
+                    ResolvedAt = new DateTime(2026, 10, 10),
+
+                }
+            };
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                var command = connection.CreateCommand();
+
+                command.CommandText = "SET IDENTITY_INSERT SupportTicket ON";
+                await command.ExecuteNonQueryAsync();
+                _context.SupportTicket.AddRange(supportTicket);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("Support Ticket added");
+
+                command.CommandText = "SET IDENTITY_INSERT SupportTicket OFF";
+                await command.ExecuteNonQueryAsync();
+                await connection.CloseAsync();
             }
         }
 
