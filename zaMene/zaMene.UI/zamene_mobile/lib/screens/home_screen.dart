@@ -63,6 +63,15 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final userId = await UserService().getUserIdFromToken();
       final data = await PropertyService().getHomepageRecommendations(userId);
+
+      if (data.properties.isNotEmpty) {
+        for (final p in data.properties) {
+          if (p.propertyID != null) {
+            p.averageRating = await PropertyService().getAveragePropertyRating(p.propertyID);
+          }
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         homepageRecommendation = data;
@@ -374,8 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         if (changed == true && mounted) {
-          await loadPropertiesWithRatings();
-          await loadHomepageRecommendations();
+          await loadPropertiesWithRatings();     
+          await loadHomepageRecommendations();    
           setState(() {});
         }
       },

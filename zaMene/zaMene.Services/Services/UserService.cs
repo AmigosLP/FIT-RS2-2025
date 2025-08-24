@@ -272,7 +272,8 @@ namespace zaMene.Services.Service
                     Email = userEntity.Email,
                     FirstName = userEntity.FirstName,
                     LastName = userEntity.LastName,
-                    ProfileImageUrl = null
+                    ProfileImageUrl = null,
+                    Phone = userEntity.Phone
                 };
             }
 

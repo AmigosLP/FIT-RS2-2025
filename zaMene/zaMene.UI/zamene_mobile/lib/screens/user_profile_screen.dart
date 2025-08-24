@@ -91,11 +91,13 @@ class _UserProfileScreenState extends State<UserProfileScreen>
     return null;
   }
 
-  bool _isValidEmail(String value) {
-    final v = value.trim();
-    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
-    return re.hasMatch(v);
-  }
+bool _isValidEmail(String value) {
+  final v = value.trim();
+  final re = RegExp(
+    r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}$'
+  );
+  return re.hasMatch(v);
+}
 
   final RegExp _phoneAllowClass = RegExp(r"[0-9+\-\s()]");
   String _digitsOnly(String s) => s.replaceAll(RegExp(r'\D'), '');
@@ -397,7 +399,7 @@ class _UserProfileScreenState extends State<UserProfileScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Tiket poslan. Odgovori stižu u obavijestima."),
+          content: Text("Tiket je uspješno poslan."),
           backgroundColor: Colors.green,
         ),
       );

@@ -24,7 +24,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<List<PropertyModel>> _loadFavoriteProperties(Set<int> favoriteIds) async {
     final all = await PropertyService().getAllProperties();
-    return all.where((p) => favoriteIds.contains(p.propertyID)).toList();
+    final favs = all.where((p) => favoriteIds.contains(p.propertyID)).toList();
+
+    // >>> NOVO: svježe povuci prosječne ocjene za svaki favorit
+    for (final p in favs) {
+      if (p.propertyID != null) {
+        p.averageRating = await PropertyService().getAveragePropertyRating(p.propertyID);
+      }
+    }
+    return favs;
   }
 
   @override
@@ -52,203 +60,205 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         title: const Text('Favoriti'),
         centerTitle: true,
       ),
-      body: Consumer<FavoriteProvider>(
-        builder: (context, favProv, _) {
-          _future = _loadFavoriteProperties(favProv.ids);
+      body: Consumer<FavoriteProvider>(builder: (context, favProv, _) {
+        _future = _loadFavoriteProperties(favProv.ids);
 
-          return FutureBuilder<List<PropertyModel>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Greška: ${snapshot.error}'));
-              }
+        return FutureBuilder<List<PropertyModel>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Greška: ${snapshot.error}'));
+            }
 
-              final items = snapshot.data ?? [];
-              if (items.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Text(
-                      'Nemate sačuvanih favorita.\nDodajte nekretninu u favorite dodirom na srce.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
+            final items = snapshot.data ?? [];
+            if (items.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Text(
+                    'Nemate sačuvanih favorita.\nDodajte nekretninu u favorite dodirom na srce.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[700]),
                   ),
-                );
-              }
+                ),
+              );
+            }
 
-              return RefreshIndicator(
-                onRefresh: _refresh,
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 180 / 230,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, i) {
-                    final p = items[i];
-                    final img = (p.imageUrls?.isNotEmpty ?? false)
-                        ? resolveImage(p.imageUrls!.first)
-                        : '';
+            return RefreshIndicator(
+              onRefresh: _refresh,
+              child: GridView.builder(
+                padding: const EdgeInsets.all(20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 180 / 230,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, i) {
+                  final p = items[i];
+                  final img = (p.imageUrls?.isNotEmpty ?? false)
+                      ? resolveImage(p.imageUrls!.first)
+                      : '';
 
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PropertyDetailScreen(property: p),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 6,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                  return GestureDetector(
+                    onTap: () async {
+                      final changed = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PropertyDetailScreen(property: p),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    height: 100,
-                                    width: double.infinity,
-                                    child: img.isNotEmpty
-                                        ? Image.network(
-                                            img,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
-                                          )
-                                        : Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
-                                  ),
+                      );
+
+                      if (changed == true && mounted) {
+                        await _refresh(); // >>> NOVO: vrati se i osvježi ocjene
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  height: 100,
+                                  width: double.infinity,
+                                  child: img.isNotEmpty
+                                      ? Image.network(
+                                          img,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
+                                        )
+                                      : Image.asset('assets/images/zaMeneLogo2.png', fit: BoxFit.cover),
                                 ),
-                                Positioned(
-                                  top: 6,
-                                  right: 6,
-                                  child: SizedBox(
-                                    width: 32,
-                                    height: 32,
-                                    child: Material(
-                                      color: Colors.white.withOpacity(0.9),
-                                      shape: const CircleBorder(),
-                                      child: InkWell(
-                                        customBorder: const CircleBorder(),
-                                        onTap: () async {
-                                          final wasFav = favProv.isFavorite(p.propertyID);
-                                          try {
-                                            await favProv.toggle(p.propertyID);
-                                            if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                              ..hideCurrentSnackBar()
-                                              ..showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite',
-                                                  ),
-                                                  backgroundColor: wasFav ? Colors.red : Colors.green,
-                                                  behavior: SnackBarBehavior.floating,
-                                                  duration: const Duration(seconds: 2),
+                              ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: Material(
+                                    color: Colors.white.withOpacity(0.9),
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () async {
+                                        final wasFav = favProv.isFavorite(p.propertyID);
+                                        try {
+                                          await favProv.toggle(p.propertyID);
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                            ..hideCurrentSnackBar()
+                                            ..showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  wasFav ? 'Uklonjeno iz favorita' : 'Dodano u favorite',
                                                 ),
-                                              );
-                                          } catch (e) {
-                                            if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                              ..hideCurrentSnackBar()
-                                              ..showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Greška: $e'),
-                                                  backgroundColor: Colors.red,
-                                                  behavior: SnackBarBehavior.floating,
-                                                ),
-                                              );
-                                          }
-                                        },
-                                        child: Center(
-                                          child: Icon(
-                                            favProv.isFavorite(p.propertyID ?? -1)
-                                                ? Icons.favorite
-                                                : Icons.favorite_border,
-                                            size: 18,
-                                            color: favProv.isFavorite(p.propertyID ?? -1)
-                                                ? Colors.red
-                                                : Colors.black54,
-                                          ),
+                                                backgroundColor: wasFav ? Colors.red : Colors.green,
+                                                behavior: SnackBarBehavior.floating,
+                                                duration: const Duration(seconds: 2),
+                                              ),
+                                            );
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context)
+                                            ..hideCurrentSnackBar()
+                                            ..showSnackBar(
+                                              SnackBar(
+                                                content: Text('Greška: $e'),
+                                                backgroundColor: Colors.red,
+                                                behavior: SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                        }
+                                      },
+                                      child: Center(
+                                        child: Icon(
+                                          favProv.isFavorite(p.propertyID ?? -1)
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          size: 18,
+                                          color: favProv.isFavorite(p.propertyID ?? -1)
+                                              ? Colors.red
+                                              : Colors.black54,
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              p.title ?? '',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            p.title ?? '',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              p.city ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            p.city ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Text(
+                                "${(p.price ?? 0).toStringAsFixed(2)} BAM",
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Spacer(),
-                            Row(
-                              children: [
-                                Text(
-                                  "${(p.price ?? 0).toStringAsFixed(2)} BAM",
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              const Spacer(),
+                              const Icon(Icons.star, size: 16, color: Colors.amber),
+                              Text(
+                                (p.averageRating ?? 0.0).toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                const Spacer(),
-                                const Icon(Icons.star, size: 16, color: Colors.amber),
-                                Text(
-                                  (p.averageRating ?? 0.0).toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

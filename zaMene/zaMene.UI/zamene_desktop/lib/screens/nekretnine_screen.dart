@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -405,6 +406,65 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
   static const double _tileSize = 130.0;
   static const double _tileGap = 10.0;
 
+  bool _saving = false;
+
+  final _rexNaziv = RegExp(r"^[A-Za-zÀ-ÿ0-9\s\-\.,'’]{3,100}$");
+  final _rexAdresa = RegExp(r"^[A-Za-zÀ-ÿ0-9\s\-\./,']{5,120}$");
+  final _rexImaSlovo = RegExp(r"[A-Za-zÀ-ÿ]");
+
+  String? _validateNaziv(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return "Unesite naziv";
+    if (value.length < 3) return "Naziv mora imati najmanje 3 znaka";
+    if (value.length > 100) return "Naziv može imati najviše 100 znakova";
+    if (!_rexNaziv.hasMatch(value)) {
+      return "Dozvoljena su slova, brojevi, razmak, -, ., , i apostrof";
+    }
+    return null;
+  }
+
+  String? _validateCijena(String? v) {
+    final value = (v ?? '').trim().replaceAll(',', '.');
+    if (value.isEmpty) return "Unesite cijenu";
+    final num? parsed = num.tryParse(value);
+    if (parsed == null) return "Cijena mora biti broj (npr. 250 ili 250.50)";
+    if (parsed <= 0) return "Cijena mora biti veća od 0";
+    if (parsed > 10000000) return "Cijena je nerealno velika";
+    return null;
+  }
+
+  String? _validateGrad(CityDesktopModel? v) {
+    if (v == null) return "Odaberite grad";
+    return null;
+  }
+
+  String? _validateDrzava(CountryDesktopModel? v) {
+    if (v == null) return "Odaberite državu";
+    return null;
+  }
+
+  String? _validateAdresa(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return "Unesite adresu";
+    if (value.length < 5) return "Adresa mora imati najmanje 5 znakova";
+    if (value.length > 120) return "Adresa može imati najviše 120 znakova";
+    if (!_rexAdresa.hasMatch(value)) {
+      return "Dozvoljena su slova, brojevi, razmak, ., -, / i apostrof";
+    }
+    if (!_rexImaSlovo.hasMatch(value)) {
+      return "Adresa mora sadržavati barem jedno slovo";
+    }
+    return null;
+  }
+
+  String? _validateOpis(String? v) {
+    final value = (v ?? '').trim();
+    if (value.isEmpty) return "Unesite opis";
+    if (value.length < 10) return "Opis mora imati najmanje 10 znakova";
+    if (value.length > 1000) return "Opis može imati najviše 1000 znakova";
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -447,12 +507,6 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
       print("Greška prilikom učitavanja država: $e");
       setState(() => ucitavanjeDrzava = false);
     }
-  }
-
-  Future<Map<String, String>> getAuthHeader() async {
-    const secureStorage = FlutterSecureStorage();
-    final token = await secureStorage.read(key: "token");
-    return {"Authorization": "Bearer $token"};
   }
 
   Future<void> odaberiSlike() async {
@@ -498,8 +552,6 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
     }
   }
 
-  bool _saving = false;
-
   String _baseUrl() =>
       Platform.isAndroid ? "http://10.0.2.2:5283" : "http://localhost:5283";
 
@@ -532,7 +584,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
         ..headers['Authorization'] = "Bearer $token"
         ..fields['Title'] = nazivController.text.trim()
         ..fields['Description'] = opisController.text.trim()
-        ..fields['Price'] = cijenaController.text.replaceAll(',', '.').trim()
+        ..fields['Price'] = cijenaController.text.trim().replaceAll(',', '.')
         ..fields['Address'] = adresaController.text.trim()
         ..fields['City'] = (odabraniGrad?.name ?? '').trim()
         ..fields['Country'] = (odabranaDrzava?.name ?? '').trim()
@@ -586,7 +638,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
             _thumbsCtrl.offset + delta, _thumbsCtrl.position.maxScrollExtent));
     _thumbsCtrl.animateTo(target,
         duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
-    }
+  }
 
   Widget _buildScroller({
     required List<Widget> tiles,
@@ -648,6 +700,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -656,38 +709,53 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
+
                 TextFormField(
                   controller: nazivController,
-                  decoration: const InputDecoration(labelText: "Naziv"),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? "Unesite naziv" : null,
+                  decoration: const InputDecoration(
+                    labelText: "Naziv",
+                    hintText: "npr. Moderan stan u centru",
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r"[A-Za-zÀ-ÿ0-9\s\-\.,'’]")),
+                    LengthLimitingTextInputFormatter(100),
+                  ],
+                  validator: _validateNaziv,
                 ),
+
                 TextFormField(
                   controller: cijenaController,
-                  decoration: const InputDecoration(labelText: "Cijena (KM)"),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Unesite cijenu";
-                    }
-                    if (double.tryParse(value.replaceAll(',', '.')) == null) {
-                      return "Unesite ispravan broj";
-                    }
-                    return null;
-                  },
+                  decoration: const InputDecoration(
+                    labelText: "Cijena (KM)",
+                    hintText: "npr. 250 ili 250,50",
+                  ),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r"[0-9\.,]")),
+                    LengthLimitingTextInputFormatter(15),
+                  ],
+                  validator: _validateCijena,
                 ),
+
                 TextFormField(
                   controller: spavaceSobeController,
                   decoration:
                       const InputDecoration(labelText: "Broj spavaćih soba"),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                  ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return "Unesite broj soba";
                     }
-                    if (int.tryParse(value) == null) {
-                      return "Unesite ispravan broj";
-                    }
+                    final n = int.tryParse(value);
+                    if (n == null) return "Unesite ispravan broj";
+                    if (n < 0) return "Broj soba ne može biti negativan";
+                    if (n > 50) return "Unesite realan broj soba";
                     return null;
                   },
                 ),
@@ -700,9 +768,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                         items: gradovi.map((city) {
                           return DropdownMenuItem<CityDesktopModel>(
                             value: city,
-                            child: Text(city.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.normal)),
+                            child: Text(city.name),
                           );
                         }).toList(),
                         onChanged: (CityDesktopModel? newValue) {
@@ -710,22 +776,18 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                             odabraniGrad = newValue;
                           });
                         },
-                        validator: (value) =>
-                            value == null ? "Odaberite grad" : null,
+                        validator: (value) => _validateGrad(value),
                       ),
 
                 ucitavanjeDrzava
                     ? const CircularProgressIndicator()
                     : DropdownButtonFormField<CountryDesktopModel>(
-                        decoration:
-                            const InputDecoration(labelText: "Država"),
+                        decoration: const InputDecoration(labelText: "Država"),
                         value: odabranaDrzava,
                         items: drzave.map((drzava) {
                           return DropdownMenuItem<CountryDesktopModel>(
                             value: drzava,
-                            child: Text(drzava.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.normal)),
+                            child: Text(drzava.name),
                           );
                         }).toList(),
                         onChanged: (CountryDesktopModel? newValue) {
@@ -733,22 +795,34 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
                             odabranaDrzava = newValue;
                           });
                         },
-                        validator: (value) =>
-                            value == null ? "Odaberite državu" : null,
+                        validator: (value) => _validateDrzava(value),
                       ),
 
                 TextFormField(
                   controller: adresaController,
-                  decoration: const InputDecoration(labelText: "Adresa"),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? "Unesite adresu" : null,
+                  decoration: const InputDecoration(
+                    labelText: "Adresa",
+                    hintText: "npr. Ulica bb 10",
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(r"[A-Za-zÀ-ÿ0-9\s\-\./,']")),
+                    LengthLimitingTextInputFormatter(120),
+                  ],
+                  validator: _validateAdresa,
                 ),
+
                 TextFormField(
                   controller: opisController,
-                  decoration: const InputDecoration(labelText: "Opis"),
+                  decoration: const InputDecoration(
+                    labelText: "Opis",
+                    hintText: "Kratak opis nekretnine...",
+                  ),
                   maxLines: 3,
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? "Unesite opis" : null,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(1000),
+                  ],
+                  validator: _validateOpis,
                 ),
 
                 const SizedBox(height: 12),
@@ -841,6 +915,7 @@ class _DodajNekretninuFormaState extends State<DodajNekretninuForma> {
     );
   }
 }
+
 class _ScrollButton extends StatelessWidget {
   final bool right;
   final VoidCallback onTap;
@@ -885,10 +960,10 @@ class _CircleIconButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
-        child: const SizedBox(
+        child: SizedBox(
           width: 30,
           height: 30,
-          child: Icon(Icons.close, color: Colors.white, size: 18),
+          child: Icon(icon, color: Colors.white, size: 18),
         ),
       ),
     );
