@@ -31,6 +31,7 @@ namespace zaMene.Services.Data
             await SeedReviewsAsync();
             await SeedCountryAsync();
             await SeedCategoryAsync();
+            await SeedReservationAsync();
         }
 
         private async Task SeedRolesAsync()
@@ -914,16 +915,6 @@ namespace zaMene.Services.Data
                      }
                 };
 
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenAsync();
-                var command = connection.CreateCommand();
-
-           
-                Console.WriteLine("Payments added");
-
-                await connection.CloseAsync();
-
-           
             }
         }
 
@@ -1019,7 +1010,6 @@ namespace zaMene.Services.Data
 
         }
 
-
         private async Task SeedReviewsAsync()
         {
             if (!_context.Reviews.Any())
@@ -1066,6 +1056,67 @@ namespace zaMene.Services.Data
                 Console.WriteLine("Reviews added");
             }
         }
+
+        private async Task SeedReservationAsync()
+        {
+            if (!_context.Reservations.Any())
+            {
+                var reservations = new List<Reservation>
+        {
+            new Reservation
+            {
+                UserID = 2,
+                PropertyID = 1,
+                StartDate =  new DateTime(2026, 6, 10),
+                EndDate = new DateTime(2026, 6, 16),
+                TotalPrice = 1500,
+                Status = Model.Enums.ReservationStatus.Zavrseno,
+                ReservationDate = new DateTime(2026, 6, 8)
+            },
+
+             new Reservation
+            {
+                UserID = 3,
+                PropertyID = 4,
+                StartDate =  new DateTime(2026, 7, 10),
+                EndDate = new DateTime(2026, 7, 15),
+                TotalPrice = 250,
+                Status = Model.Enums.ReservationStatus.Zavrseno,
+                ReservationDate = new DateTime(2026, 7, 8)
+            },
+
+              new Reservation
+            {
+                UserID = 5,
+                PropertyID = 5,
+                StartDate =  new DateTime(2026, 8, 10),
+                EndDate = new DateTime(2026, 8, 15),
+                TotalPrice = 375,
+                Status = Model.Enums.ReservationStatus.Zavrseno,
+                ReservationDate = new DateTime(2026, 8, 8)
+            },
+
+
+              new Reservation
+            {
+                UserID = 6,
+                PropertyID = 6,
+                StartDate =  new DateTime(2026, 8, 20),
+                EndDate = new DateTime(2026, 8, 30),
+                TotalPrice = 300,
+                Status = Model.Enums.ReservationStatus.Zavrseno,
+                ReservationDate = new DateTime(2026, 8, 15)
+            },
+
+        };
+
+                _context.Reservations.AddRange(reservations);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine("Reservation added");
+            }
+        }
+
 
         private string HashPassword(string password)
         {
