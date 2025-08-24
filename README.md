@@ -87,7 +87,7 @@ Ako pokrećemo aplikaciju preko build (zipovano) foldera unutar projekta, sve š
 - Na admin strani pokrenuti .exe file i pokrenut ćemo zamene_desktop
 - Drag and Drop APK fajl u AVD emulator na zamene_mobile i time ćemo pristupit aplikaciji i moći se logirati.
 
-## Password for extract apk build
+## Password za extract apk build-a
 `fit`
 
 ## Kredencijali
