@@ -81,6 +81,15 @@ Aplikacija pruža efikasan sistem za upravljanje nekretninama. Mogućnost odabir
 - Pokrenite aplikaciju
 - `flutter run`
 
+## Pokretanje preko fit-app-build
+Ako pokrećemo aplikaciju preko build (zipovano) foldera unutar projekta, sve što trebamo jeste:
+- Extract 7zip folder da imamo sve fajlove
+- Na admin strani pokrenuti .exe file i pokrenut ćemo zamene_desktop
+- Drag and Drop APK fajl u AVD emulator na zamene_mobile i time ćemo pristupit aplikaciji i moći se logirati.
+
+## Password for extract apk build
+`fit`
+
 ## Kredencijali
 Za desktop dio sljedeci kredencijali su dostupni
 ### Admin
